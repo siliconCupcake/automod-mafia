@@ -18,4 +18,11 @@ public class PlayerActivity extends AppCompatActivity {
         TextView title = getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title);
         title.setText("PlayerActivity");
     }
+
+    @Override
+    public void onBackPressed() {
+        finish();
+        overridePendingTransition(R.anim.slide_from_left, R.anim.slide_to_right);
+        super.onBackPressed();
+    }
 }

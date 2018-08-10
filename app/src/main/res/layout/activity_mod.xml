@@ -1,9 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ModActivity">
 
-</android.support.constraint.ConstraintLayout>
+    <RelativeLayout
+        android:id="@+id/game_config"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/init_game"
+        android:layout_alignParentTop="true">
+
+        <android.support.design.widget.TextInputLayout
+            android:id="@+id/game_name_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_margin="32dp"
+            app:errorTextAppearance="@style/ErrorText"
+            app:hintTextAppearance="@style/TextLabel">
+
+            <EditText
+                android:id="@+id/game_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/game_name_hint"
+                android:imeOptions="actionDone"
+                android:inputType="text"
+                android:lines="1"
+                android:textColor="@android:color/black"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+        </android.support.design.widget.TextInputLayout>
+
+        <TextView
+            android:id="@+id/config_instruction"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/game_name_layout"
+            android:layout_marginStart="32dp"
+            android:text="@string/config_instructions"
+            android:textSize="18sp" />
+
+        <GridView
+            android:id="@+id/character_picker"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/config_instruction"
+            android:layout_centerInParent="true"
+            android:layout_margin="16dp"
+            android:gravity="center"
+            android:horizontalSpacing="16dp"
+            android:numColumns="2"
+            android:padding="16dp"
+            android:verticalSpacing="16dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/character_picker"
+            android:layout_marginStart="32sp"
+            android:text="@string/config_hint"
+            android:textSize="18sp" />
+
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/connection_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:gravity="center"
+        android:lineSpacingExtra="8dp"
+        android:maxLines="2"
+        android:text="@string/connection_count"
+        android:textColor="@android:color/black"
+        android:textSize="40sp"
+        android:visibility="gone" />
+
+    <Button
+        android:id="@+id/init_game"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="32dp"
+        android:background="@drawable/styled_button"
+        android:enabled="false"
+        android:text="@string/host_game"
+        android:textAllCaps="false"
+        android:textColor="@color/button_text_color"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+</RelativeLayout>

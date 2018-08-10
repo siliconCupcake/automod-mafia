@@ -18,7 +18,7 @@
             android:layout_height="wrap_content"
             android:id="@+id/greeting"
             android:layout_above="@+id/choose_role"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="8dp"
             android:gravity="center"
             android:text="@string/greeting_text"
             android:textColor="@android:color/black"
@@ -31,7 +31,7 @@
             android:layout_height="wrap_content"
             android:id="@+id/choose_role"
             android:layout_centerInParent="true"
-            android:padding="32dp">
+            android:padding="16dp">
 
             <Button
                 android:layout_width="0dp"
@@ -42,7 +42,7 @@
                 android:text="@string/role_mod"
                 android:background="@drawable/styled_button"
                 android:textAllCaps="false"
-                android:textColor="#0077c2"
+                android:textColor="@color/button_text_color"
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
@@ -55,7 +55,7 @@
                 android:text="@string/role_player"
                 android:background="@drawable/styled_button"
                 android:textAllCaps="false"
-                android:textColor="#0077c2"
+                android:textColor="@color/button_text_color"
                 android:textSize="20sp"
                 android:textStyle="bold" />
 

@@ -18,7 +18,8 @@
             </intent-filter>
         </activity>
         <activity android:name=".PlayerActivity" />
-        <activity android:name=".ModActivity"></activity>
+        <activity android:name=".ModActivity"
+            android:windowSoftInputMode="stateHidden|adjustPan"/>
     </application>
 
 </manifest>

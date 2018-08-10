@@ -1,6 +1,12 @@
 <resources>
     <string name="app_name">TheModfather</string>
-    <string name="greeting_text">Who are you ?</string>
+    <string name="greeting_text">Who are you?</string>
     <string name="role_mod">Mod</string>
     <string name="role_player">Player</string>
+    <string name="host_game">Host Game</string>
+    <string name="start_game">Let\'s begin</string>
+    <string name="connection_count">Connections\n0</string>
+    <string name="game_name_hint">Give your game a name</string>
+    <string name="config_instructions">Make your pick:</string>
+    <string name="config_hint">Note: Villagers, Mafia and Godfather are picked by default</string>
 </resources>

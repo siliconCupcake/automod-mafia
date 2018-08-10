@@ -8,7 +8,7 @@ public class ModfatherApplication extends Application {
     public void onCreate() {
         super.onCreate();
 
-        TypefaceUtil.setDefaultFont(this, "SERIF", "fonts/Product-Sans-Regular.ttf");
+        MafiaUtils.setDefaultFont(this, "SERIF", "fonts/Product-Sans-Regular.ttf");
 
     }
 }
