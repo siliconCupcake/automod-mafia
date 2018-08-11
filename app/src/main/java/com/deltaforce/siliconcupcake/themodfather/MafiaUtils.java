@@ -14,6 +14,9 @@ import java.util.Map;
 public class MafiaUtils {
 
     public static final ArrayList<String> CHARACTER_TYPES = new ArrayList<>(Arrays.asList("Doctor", "Slut", "Cop", "Vigilante", "Arson", "Doctor", "Slut", "Cop", "Vigilante", "Arson"));
+    public static final String WAKE_UP_MORNING = "Village wakes up to the death of ";
+    public static final String WAKE_UP_NIGHT = "Wake up.";
+    public static final String GO_TO_SLEEP = "Village goes to sleep.";
 
     public static void setDefaultFont(Context context,
                                       String staticTypefaceFieldName, String fontAssetName) {

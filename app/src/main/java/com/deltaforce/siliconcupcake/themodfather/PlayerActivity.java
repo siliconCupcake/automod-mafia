@@ -1,7 +1,10 @@
 package com.deltaforce.siliconcupcake.themodfather;
 
+import android.app.Dialog;
 import android.content.Context;
 
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TextInputLayout;
@@ -10,10 +13,12 @@ import android.os.Bundle;
 import android.text.TextUtils;
 
 import android.view.View;
+import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.GridView;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -53,11 +58,15 @@ public class PlayerActivity extends AppCompatActivity {
     @BindView(R.id.player_config)
     RelativeLayout playerConfig;
 
+    @BindView(R.id.game_setup)
+    LinearLayout gameSetup;
+
     GridViewAdapter adapter;
     String playerName;
     ArrayList<String> games;
     ArrayList<Endpoint> endpoints = new ArrayList<>();
     ConnectionsClient mConnectionsClient;
+    Dialog loadingDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,12 +118,13 @@ public class PlayerActivity extends AppCompatActivity {
                     if (nameField.requestFocus())
                         showKeyboard();
                 } else if (adapter.getSelections().size() > 1) {
-                    Snackbar.make(playerConfig, "Pick only one game.", Snackbar.LENGTH_SHORT).show();
+                    Snackbar.make(playerConfig, "Pick only one game.", Snackbar.LENGTH_LONG).show();
                     playerNameLayout.setErrorEnabled(false);
                 } else if (adapter.getSelections().size() == 0) {
-                    Snackbar.make(playerConfig, "Pick a game.", Snackbar.LENGTH_SHORT).show();
+                    Snackbar.make(playerConfig, "Pick a game.", Snackbar.LENGTH_LONG).show();
                     playerNameLayout.setErrorEnabled(false);
                 } else {
+                    showLoadingDialog("Connecting to " + games.get(adapter.getSelections().get(0)));
                     mConnectionsClient.requestConnection(playerName,
                             endpoints.get(adapter.getSelections().get(0)).getId(), connectToGame);
                     playerNameLayout.setErrorEnabled(false);
@@ -141,17 +151,21 @@ public class PlayerActivity extends AppCompatActivity {
 
         @Override
         public void onConnectionResult(@NonNull String s, @NonNull ConnectionResolution connectionResolution) {
+            loadingDialog.dismiss();
             switch (connectionResolution.getStatus().getStatusCode()) {
                 case ConnectionsStatusCodes.STATUS_OK:
-                    Snackbar.make(playerConfig, "Connected to " + getEndpointWithId(s).getName(), Snackbar.LENGTH_SHORT).show();
+                    mConnectionsClient.stopDiscovery();
+                    gameSetup.setVisibility(View.GONE);
+                    Snackbar.make(playerConfig, "Connected to " + getEndpointWithId(s).getName(), Snackbar.LENGTH_LONG).show();
+                    showLoadingDialog("Waiting for other players");
                     break;
 
                 case ConnectionsStatusCodes.STATUS_CONNECTION_REJECTED:
-                    Snackbar.make(playerConfig, "Connection Rejected" , Snackbar.LENGTH_SHORT).show();
+                    Snackbar.make(playerConfig, "Connection Rejected" , Snackbar.LENGTH_LONG).show();
                     break;
 
                 case ConnectionsStatusCodes.STATUS_ERROR:
-                    Snackbar.make(playerConfig, "Connection error" , Snackbar.LENGTH_SHORT).show();
+                    Snackbar.make(playerConfig, "Connection error" , Snackbar.LENGTH_LONG).show();
                     break;
             }
         }
@@ -167,6 +181,16 @@ public class PlayerActivity extends AppCompatActivity {
             if (e.getId().equals(eid))
                 return e;
         return null;
+    }
+
+    private void showLoadingDialog(String message){
+        loadingDialog = new Dialog(PlayerActivity.this);
+        loadingDialog.setContentView(R.layout.dialog_connecting);
+        loadingDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        ((TextView) loadingDialog.findViewById(R.id.dialog_text)).setText(message);
+        loadingDialog.setCanceledOnTouchOutside(false);
+        loadingDialog.setCancelable(false);
+        loadingDialog.show();
     }
 
     @Override

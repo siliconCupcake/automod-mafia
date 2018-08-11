@@ -91,7 +91,7 @@ public class ModActivity extends AppCompatActivity {
                         if (nameField.requestFocus())
                             showKeyboard();
                     } else if (adapter.getSelections().size() < 3) {
-                        Snackbar.make(gameConfig, "Pick " + String.valueOf(3 - adapter.getSelections().size()) + " more.", Snackbar.LENGTH_SHORT).show();
+                        Snackbar.make(gameConfig, "Pick " + String.valueOf(3 - adapter.getSelections().size()) + " more.", Snackbar.LENGTH_LONG).show();
                         nameLayout.setErrorEnabled(false);
                     } else {
                         connectionCount.setText("Connections\n" + String.valueOf(connections));
@@ -132,19 +132,9 @@ public class ModActivity extends AppCompatActivity {
             Endpoint e = getEndpointWithId(s);
             switch (connectionResolution.getStatus().getStatusCode()) {
                 case ConnectionsStatusCodes.STATUS_OK:
-                    Snackbar.make(connectionCount, "Connected to " + e.getName() , Snackbar.LENGTH_SHORT).show();
+                    Snackbar.make(connectionCount, "Connected to " + e.getName() , Snackbar.LENGTH_LONG).show();
                     connections++;
                     connectionCount.setText("Connections\n" + String.valueOf(connections));
-                    break;
-
-                case ConnectionsStatusCodes.STATUS_CONNECTION_REJECTED:
-                    Snackbar.make(connectionCount, "Connection Rejected" , Snackbar.LENGTH_SHORT).show();
-                    players.remove(e);
-                    break;
-
-                case ConnectionsStatusCodes.STATUS_ERROR:
-                    Snackbar.make(connectionCount, "Connection error" , Snackbar.LENGTH_SHORT).show();
-                    players.remove(e);
                     break;
             }
         }
