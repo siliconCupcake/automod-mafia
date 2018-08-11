@@ -1,5 +1,6 @@
 package com.deltaforce.siliconcupcake.themodfather;
 
+import android.animation.Animator;
 import android.content.Context;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TextInputLayout;
@@ -7,6 +8,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
+import android.view.animation.AnimationUtils;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
@@ -14,7 +16,6 @@ import android.widget.GridView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import java.util.ArrayList;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -57,6 +58,10 @@ public class ModActivity extends AppCompatActivity {
 
         ButterKnife.bind(this);
 
+        characterCards.setVerticalScrollBarEnabled(false);
+        adapter = new GridViewAdapter(this, MafiaUtils.CHARACTER_TYPES);
+        characterCards.setAdapter(adapter);
+
         startGame.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -70,9 +75,7 @@ public class ModActivity extends AppCompatActivity {
                         Snackbar.make(gameConfig, "Pick " + String.valueOf(3 - adapter.getSelections().size()) + " more.", Snackbar.LENGTH_SHORT).show();
                         nameLayout.setErrorEnabled(false);
                     } else {
-                        gameConfig.setVisibility(View.GONE);
-                        startGame.setText(R.string.start_game);
-                        connectionCount.setVisibility(View.VISIBLE);
+                        animateTransition();
                         nameLayout.setErrorEnabled(false);
                         playersJoined = true;
                     }
@@ -81,23 +84,40 @@ public class ModActivity extends AppCompatActivity {
                 }
             }
         });
-
-        ArrayList<String> characters = new ArrayList<>();
-        characters.add("Doctor");
-        characters.add("Slut");
-        characters.add("Cop");
-        characters.add("Arson");
-        characters.add("Vigilante");
-        adapter = new GridViewAdapter(this, characters);
-        characterCards.setAdapter(adapter);
-
-        startGame.setEnabled(true);
     }
 
     public void showKeyboard(){
         ((InputMethodManager) this.getSystemService(Context.INPUT_METHOD_SERVICE)).toggleSoftInput(
                 InputMethodManager.SHOW_FORCED,
                 InputMethodManager.HIDE_IMPLICIT_ONLY);
+    }
+
+    public void animateTransition(){
+        gameConfig.animate().scaleX(0.0f).scaleY(0.0f).setDuration(300).setListener(new Animator.AnimatorListener() {
+
+            @Override
+            public void onAnimationStart(Animator animator) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animator) {
+                gameConfig.setVisibility(View.GONE);
+                connectionCount.setVisibility(View.VISIBLE);
+                connectionCount.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.zoom_in));
+                startGame.setText(R.string.start_game);
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animator) {
+
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animator) {
+
+            }
+        });
     }
 
     @Override
