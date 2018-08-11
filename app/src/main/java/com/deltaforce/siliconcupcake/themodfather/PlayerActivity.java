@@ -2,6 +2,7 @@ package com.deltaforce.siliconcupcake.themodfather;
 
 import android.content.Context;
 
+import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AppCompatActivity;
@@ -15,6 +16,20 @@ import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+
+import com.google.android.gms.nearby.Nearby;
+import com.google.android.gms.nearby.connection.ConnectionInfo;
+import com.google.android.gms.nearby.connection.ConnectionLifecycleCallback;
+import com.google.android.gms.nearby.connection.ConnectionResolution;
+import com.google.android.gms.nearby.connection.ConnectionsClient;
+import com.google.android.gms.nearby.connection.ConnectionsStatusCodes;
+import com.google.android.gms.nearby.connection.DiscoveredEndpointInfo;
+import com.google.android.gms.nearby.connection.DiscoveryOptions;
+import com.google.android.gms.nearby.connection.EndpointDiscoveryCallback;
+import com.google.android.gms.nearby.connection.Payload;
+import com.google.android.gms.nearby.connection.PayloadCallback;
+import com.google.android.gms.nearby.connection.PayloadTransferUpdate;
+import com.google.android.gms.nearby.connection.Strategy;
 
 import java.util.ArrayList;
 
@@ -41,6 +56,8 @@ public class PlayerActivity extends AppCompatActivity {
     GridViewAdapter adapter;
     String playerName;
     ArrayList<String> games;
+    ArrayList<Endpoint> endpoints = new ArrayList<>();
+    ConnectionsClient mConnectionsClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +77,28 @@ public class PlayerActivity extends AppCompatActivity {
         games = new ArrayList<>();
         adapter = new GridViewAdapter(this, games);
         gameList.setAdapter(adapter);
+        mConnectionsClient = Nearby.getConnectionsClient(this);
+
+        mConnectionsClient.startDiscovery("com.deltaforce.siliconcupcake.themodfather",
+                new EndpointDiscoveryCallback() {
+                    @Override
+                    public void onEndpointFound(@NonNull String s, @NonNull DiscoveredEndpointInfo discoveredEndpointInfo) {
+                        Endpoint e = new Endpoint(s, discoveredEndpointInfo.getEndpointName());
+                        endpoints.add(e);
+                        games.add(e.getName());
+                        adapter.notifyDataSetChanged();
+                    }
+
+                    @Override
+                    public void onEndpointLost(@NonNull String s) {
+                        Endpoint e = getEndpointWithId(s);
+                        if (e != null) {
+                            games.remove(e.getName());
+                            endpoints.remove(e);
+                            adapter.notifyDataSetChanged();
+                        }
+                    }
+                }, new DiscoveryOptions(Strategy.P2P_CLUSTER));
 
         joinGame.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -76,14 +115,63 @@ public class PlayerActivity extends AppCompatActivity {
                     Snackbar.make(playerConfig, "Pick a game.", Snackbar.LENGTH_SHORT).show();
                     playerNameLayout.setErrorEnabled(false);
                 } else {
+                    mConnectionsClient.requestConnection(playerName,
+                            endpoints.get(adapter.getSelections().get(0)).getId(), connectToGame);
                     playerNameLayout.setErrorEnabled(false);
                 }
             }
         });
     }
 
+    private final ConnectionLifecycleCallback connectToGame = new ConnectionLifecycleCallback() {
+        @Override
+        public void onConnectionInitiated(@NonNull String s, @NonNull ConnectionInfo connectionInfo) {
+            mConnectionsClient.acceptConnection(s, new PayloadCallback() {
+                @Override
+                public void onPayloadReceived(@NonNull String s, @NonNull Payload payload) {
+
+                }
+
+                @Override
+                public void onPayloadTransferUpdate(@NonNull String s, @NonNull PayloadTransferUpdate payloadTransferUpdate) {
+
+                }
+            });
+        }
+
+        @Override
+        public void onConnectionResult(@NonNull String s, @NonNull ConnectionResolution connectionResolution) {
+            switch (connectionResolution.getStatus().getStatusCode()) {
+                case ConnectionsStatusCodes.STATUS_OK:
+                    Snackbar.make(playerConfig, "Connected to " + getEndpointWithId(s).getName(), Snackbar.LENGTH_SHORT).show();
+                    break;
+
+                case ConnectionsStatusCodes.STATUS_CONNECTION_REJECTED:
+                    Snackbar.make(playerConfig, "Connection Rejected" , Snackbar.LENGTH_SHORT).show();
+                    break;
+
+                case ConnectionsStatusCodes.STATUS_ERROR:
+                    Snackbar.make(playerConfig, "Connection error" , Snackbar.LENGTH_SHORT).show();
+                    break;
+            }
+        }
+
+        @Override
+        public void onDisconnected(@NonNull String s) {
+
+        }
+    };
+
+    private Endpoint getEndpointWithId(String eid) {
+        for (Endpoint e: endpoints)
+            if (e.getId().equals(eid))
+                return e;
+        return null;
+    }
+
     @Override
     public void onBackPressed() {
+        mConnectionsClient.stopDiscovery();
         finish();
         overridePendingTransition(R.anim.slide_from_left, R.anim.slide_to_right);
         super.onBackPressed();

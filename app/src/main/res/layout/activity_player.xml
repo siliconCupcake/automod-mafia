@@ -77,7 +77,7 @@
         android:layout_marginTop="16dp"
         android:layout_marginBottom="32dp"
         android:background="@drawable/styled_button"
-        android:text="@string/host_game"
+        android:text="@string/join_game"
         android:textAllCaps="false"
         android:textColor="@color/button_text_color"
         android:textSize="20sp"

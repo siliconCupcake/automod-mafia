@@ -4,8 +4,9 @@
     <string name="role_mod">Mod</string>
     <string name="role_player">Player</string>
     <string name="host_game">Host Game</string>
+    <string name="join_game">Join Game</string>
     <string name="start_game">Let\'s begin</string>
-    <string name="connection_count">Connections\n0</string>
+    <string name="connection_count">Connections\n%d</string>
     <string name="game_name_hint">Give your game a name</string>
     <string name="player_name_hint">What should we call you?</string>
     <string name="config_instructions">Make your pick:</string>
