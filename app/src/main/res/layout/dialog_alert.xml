@@ -25,7 +25,7 @@
         style="@android:style/Widget.DeviceDefault.Button.Borderless"
         android:layout_gravity="center_vertical|end"
         android:text="@string/ok_button"
-        android:textSize="18sp"
+        android:textSize="16sp"
         android:textStyle="bold"
         android:textColor="@color/colorAccent" />
 

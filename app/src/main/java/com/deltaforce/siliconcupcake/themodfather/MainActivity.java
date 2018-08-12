@@ -14,6 +14,8 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
@@ -33,7 +35,8 @@ public class MainActivity extends AppCompatActivity {
 
     public boolean permissionsGranted;
     private int mode;
-    public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
+    public static final int MY_PERMISSIONS_REQUEST_PLAYER = 99;
+    public static final int MY_PERMISSIONS_REQUEST_MOD = 91;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
                     startActivity(new Intent(getApplicationContext(), PlayerActivity.class));
                     overridePendingTransition(R.anim.slide_from_right, R.anim.slide_to_left);
                 } else {
-                    permissionsGranted = checkPermissions();
+                    permissionsGranted = checkPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_PERMISSIONS_REQUEST_PLAYER);
                 }
             }
         });
@@ -72,52 +75,52 @@ public class MainActivity extends AppCompatActivity {
                     startActivity(new Intent(getApplicationContext(), ModActivity.class));
                     overridePendingTransition(R.anim.slide_from_right, R.anim.slide_to_left);
                 } else {
-                    permissionsGranted = checkPermissions();
+                    permissionsGranted = checkPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, MY_PERMISSIONS_REQUEST_MOD);
                 }
             }
         });
 
     }
 
-    private boolean checkPermissions(){
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_COARSE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.ACCESS_COARSE_LOCATION)) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
-                        MY_PERMISSIONS_REQUEST_LOCATION);
-            } else {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
-                        MY_PERMISSIONS_REQUEST_LOCATION);
+    private boolean checkPermissions(String[] permissions, int reqCode){
+        ArrayList<String> temp = new ArrayList<>();
+        for(String perm : permissions) {
+            if (ContextCompat.checkSelfPermission(this, perm)
+                    != PackageManager.PERMISSION_GRANTED) {
+                temp.add(perm);
             }
-            return false;
-        } else {
+        }
+        String[] required = new String[temp.size()];
+        required = temp.toArray(required);
+        if(required.length == 0){
             return true;
+        }
+        else{
+            ActivityCompat.requestPermissions(this, required, reqCode);
+            return false;
         }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case MY_PERMISSIONS_REQUEST_LOCATION: {
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    if (ContextCompat.checkSelfPermission(this,
-                            Manifest.permission.ACCESS_COARSE_LOCATION)
-                            == PackageManager.PERMISSION_GRANTED) {
-                        permissionsGranted = true;
-                        if (mode == 0)
-                            pickMod.performClick();
-                        else
-                            pickPlayer.performClick();
-                    }
-                } else {
-                    Snackbar.make(rolePicker, "Please allow permissions to proceed", Snackbar.LENGTH_LONG).show();
+        if (grantResults.length > 0) {
+            for (int result : grantResults) {
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    permissionsGranted = false;
+                    Snackbar.make(rolePicker, "Please allow all permissions to proceed", Snackbar.LENGTH_LONG).show();
+                    return;
                 }
             }
+        }
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_MOD:
+                pickMod.performClick();
+                break;
+
+            case MY_PERMISSIONS_REQUEST_PLAYER:
+                pickPlayer.performClick();
+                break;
+
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }

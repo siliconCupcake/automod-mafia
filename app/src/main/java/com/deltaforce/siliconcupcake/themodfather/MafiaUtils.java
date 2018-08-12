@@ -3,10 +3,13 @@ package com.deltaforce.siliconcupcake.themodfather;
 import android.content.Context;
 import android.graphics.Typeface;
 import android.os.Build;
+import android.os.Environment;
 import android.util.Log;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -23,7 +26,7 @@ public class MafiaUtils {
     public static final ArrayList<String> CHARACTER_TYPES = new ArrayList<>(Arrays.asList("Doctor", "Slut", "Cop", "Vigilante", "Arsonist"));
 
     public static final String WAKE_UP_MORNING = "Village wakes up to the death of ";
-    public static final String GO_TO_SLEEP = "Go to sleep.";
+    public static final String GO_TO_SLEEP = "Go to sleep";
 
     public static final int RESPONSE_TYPE_ROLE = 71;
     public static final int RESPONSE_TYPE_DEATH = 74;
@@ -57,7 +60,6 @@ public class MafiaUtils {
     public static byte[] serialize(Object object) throws IOException {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-        // transform object to stream and then to a byte array
         objectOutputStream.writeObject(object);
         objectOutputStream.flush();
         objectOutputStream.close();
@@ -68,5 +70,28 @@ public class MafiaUtils {
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
         ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
         return objectInputStream.readObject();
+    }
+
+    public static void addToLogFile(String logText, String fileName) {
+        String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/TheModfather";
+        File logDir = new File(path);
+        if (!logDir.exists())
+            if(!logDir.mkdir())
+                Log.e("DIRECTORY", "Unable to create directory");
+        try {
+            File logFile = new File(path, fileName);
+            if (!logFile.exists())
+                logFile.createNewFile();
+            FileWriter writer = new FileWriter(logFile, true);
+            writer.append(logText);
+            writer.append(System.lineSeparator());
+            writer.flush();
+            writer.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        Log.e("Path", path);
+        Log.e("DirPath", logDir.getAbsolutePath());
+//        Log.e("FilePath", logFile.getAbsolutePath());
     }
 }

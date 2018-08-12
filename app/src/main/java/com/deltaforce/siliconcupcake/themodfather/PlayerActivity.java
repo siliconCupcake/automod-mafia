@@ -8,6 +8,9 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.os.Build;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TextInputLayout;
@@ -104,7 +107,7 @@ public class PlayerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
 
-        myRole = "Options";
+        myRole = "Game Settings";
         setUpActionBar();
 
         ButterKnife.bind(this);
@@ -189,6 +192,10 @@ public class PlayerActivity extends AppCompatActivity {
         public void onPayloadReceived(@NonNull String s, @NonNull Payload payload) {
             Response response = new Response();
             loadingDialog.dismiss();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE));
+            else
+                ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(1000);
             try {
                 response = (Response) MafiaUtils.deserialize(payload.asBytes());
             } catch (Exception e) {
@@ -236,6 +243,13 @@ public class PlayerActivity extends AppCompatActivity {
                     break;
 
                 case MafiaUtils.RESPONSE_TYPE_OVER:
+                    String winner = (String) response.getData();
+                    showAlertDialog("The " + winner + " win", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            onBackPressed();
+                        }
+                    });
 
             }
 

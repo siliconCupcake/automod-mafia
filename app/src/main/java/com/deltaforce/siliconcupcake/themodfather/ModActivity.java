@@ -119,6 +119,7 @@ public class ModActivity extends AppCompatActivity {
         public void onDisconnected(@NonNull String s) {
             connections--;
             connectionCount.setText("Connections\n" + String.valueOf(connections));
+            players.remove(getEndpointWithId(s));
         }
     };
 
@@ -163,6 +164,8 @@ public class ModActivity extends AppCompatActivity {
                     assignRoles(connections);
                     startGame.setEnabled(false);
                     for (int i = 0; i < players.size(); i++) {
+                        String logText = "Sent Role: {" + players.get(i).getName() + ", " + roles.get(i) + "}";
+                        MafiaUtils.addToLogFile(logText, gameName + ".txt");
                         Response r = new Response(MafiaUtils.RESPONSE_TYPE_ROLE, roles.get(i));
                         sendDataToPlayer(players.get(i).getId(), r);
                     }
@@ -231,7 +234,7 @@ public class ModActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (connections != 0) {
+        if (!playersJoined) {
             mConnectionsClient.stopAdvertising();
             finish();
             overridePendingTransition(R.anim.slide_from_left, R.anim.slide_to_right);
