@@ -23,13 +23,16 @@ public class MafiaUtils {
     public static final ArrayList<String> CHARACTER_TYPES = new ArrayList<>(Arrays.asList("Doctor", "Slut", "Cop", "Vigilante", "Arson"));
 
     public static final String WAKE_UP_MORNING = "Village wakes up to the death of ";
-    public static final String WAKE_UP_NIGHT = "Wake up.";
-    public static final String GO_TO_SLEEP = "Village goes to sleep.";
+    public static final String GO_TO_SLEEP = "Go to sleep.";
 
     public static final int RESPONSE_TYPE_ROLE = 71;
     public static final int RESPONSE_TYPE_DEATH = 74;
     public static final int RESPONSE_TYPE_ACK = 73;
+    public static final int RESPONSE_TYPE_WAKE = 75;
     public static final int RESPONSE_TYPE_COP = 72;
+
+    public static final int REQUEST_TYPE_CONTINUE = 81;
+    public static final int REQUEST_TYPE_VOTE = 82;
 
     public static void setDefaultFont(Context context,
                                       String staticTypefaceFieldName, String fontAssetName) {

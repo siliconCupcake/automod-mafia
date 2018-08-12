@@ -1,5 +1,6 @@
 package com.deltaforce.siliconcupcake.themodfather;
 
+import android.animation.Animator;
 import android.app.Dialog;
 import android.content.Context;
 
@@ -14,12 +15,14 @@ import android.text.TextUtils;
 
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
+import android.view.animation.AnimationUtils;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.GridView;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.google.android.gms.nearby.Nearby;
@@ -43,31 +46,56 @@ import butterknife.ButterKnife;
 
 public class PlayerActivity extends AppCompatActivity {
 
+    @BindView(R.id.player_parent)
+    FrameLayout parent;
+
+    @BindView(R.id.game_setup)
+    LinearLayout gameSetupLayout;
+
     @BindView(R.id.player_name_layout)
     TextInputLayout playerNameLayout;
 
     @BindView(R.id.player_name)
     EditText nameField;
 
-    @BindView(R.id.join_game)
-    Button joinGame;
+    @BindView(R.id.game_list)
+    GridView availableGameList;
 
-    @BindView(R.id.game_picker)
-    GridView gameList;
+    @BindView(R.id.join_button)
+    Button joinButton;
 
-    @BindView(R.id.player_config)
-    RelativeLayout playerConfig;
+    @BindView(R.id.sleep_layout)
+    LinearLayout sleepLayout;
 
-    @BindView(R.id.game_setup)
-    LinearLayout gameSetup;
+    @BindView(R.id.sleep_text)
+    TextView sleepText;
 
-    GridViewAdapter adapter;
+    @BindView(R.id.sleep_button)
+    Button sleepButton;
+
+    @BindView(R.id.vote_layout)
+    LinearLayout voteLayout;
+
+    @BindView(R.id.death_text)
+    TextView deathText;
+
+    @BindView(R.id.vote_instruction)
+    TextView voteInstruction;
+
+    @BindView(R.id.vote_list)
+    GridView voteList;
+
+    @BindView(R.id.vote_button)
+    Button voteButton;
+
+    GridViewAdapter gamesAdapter, voteAdapter;
     String playerName;
-    ArrayList<String> games;
+    ArrayList<String> games, alive;
     ArrayList<Endpoint> endpoints = new ArrayList<>();
     ConnectionsClient mConnectionsClient;
     Dialog loadingDialog;
     String myRole;
+    boolean isConnected = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,18 +103,15 @@ public class PlayerActivity extends AppCompatActivity {
         setContentView(R.layout.activity_player);
 
         myRole = "PlayerActivity";
-        getSupportActionBar().setElevation(0);
-        getSupportActionBar().setDisplayShowCustomEnabled(true);
-        getSupportActionBar().setDisplayShowTitleEnabled(false);
-        getSupportActionBar().setCustomView(R.layout.action_bar);
-        ((TextView) getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title)).setText(myRole);
+        setUpActionBar();
 
         ButterKnife.bind(this);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        gameList.setVerticalScrollBarEnabled(false);
+        availableGameList.setVerticalScrollBarEnabled(false);
         games = new ArrayList<>();
-        adapter = new GridViewAdapter(this, games);
-        gameList.setAdapter(adapter);
+        gamesAdapter = new GridViewAdapter(this, games);
+        availableGameList.setAdapter(gamesAdapter);
         mConnectionsClient = Nearby.getConnectionsClient(this);
 
         mConnectionsClient.startDiscovery(MafiaUtils.SERVICE_ID,
@@ -96,7 +121,7 @@ public class PlayerActivity extends AppCompatActivity {
                         Endpoint e = new Endpoint(s, discoveredEndpointInfo.getEndpointName());
                         endpoints.add(e);
                         games.add(e.getName());
-                        adapter.notifyDataSetChanged();
+                        gamesAdapter.notifyDataSetChanged();
                     }
 
                     @Override
@@ -105,34 +130,14 @@ public class PlayerActivity extends AppCompatActivity {
                         if (e != null) {
                             games.remove(e.getName());
                             endpoints.remove(e);
-                            adapter.notifyDataSetChanged();
+                            gamesAdapter.notifyDataSetChanged();
                         }
                     }
                 }, new DiscoveryOptions(Strategy.P2P_CLUSTER));
 
-        joinGame.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                playerName = nameField.getText().toString().trim();
-                if (TextUtils.isEmpty(playerName)) {
-                    playerNameLayout.setError("Name cannot be empty");
-                    if (nameField.requestFocus())
-                        showKeyboard();
-                } else if (adapter.getSelections().size() > 1) {
-                    Snackbar.make(playerConfig, "Pick only one game.", Snackbar.LENGTH_LONG).show();
-                    playerNameLayout.setErrorEnabled(false);
-                } else if (adapter.getSelections().size() == 0) {
-                    Snackbar.make(playerConfig, "Pick a game.", Snackbar.LENGTH_LONG).show();
-                    playerNameLayout.setErrorEnabled(false);
-                } else {
-                    showLoadingDialog("Connecting to " + games.get(adapter.getSelections().get(0)));
-                    mConnectionsClient.requestConnection(playerName,
-                            endpoints.get(adapter.getSelections().get(0)).getId(), connectToGame);
-                    playerNameLayout.setErrorEnabled(false);
-                    myRole = "Mafia";
-                }
-            }
-        });
+        setUpJoinButton();
+        setUpSleepButton();
+        setUpVoteButton();
     }
 
     private final ConnectionLifecycleCallback connectToGame = new ConnectionLifecycleCallback() {
@@ -147,18 +152,20 @@ public class PlayerActivity extends AppCompatActivity {
             switch (connectionResolution.getStatus().getStatusCode()) {
                 case ConnectionsStatusCodes.STATUS_OK:
                     mConnectionsClient.stopDiscovery();
-                    gameSetup.setVisibility(View.GONE);
-                    mConnectionsClient.stopDiscovery();
-                    Snackbar.make(playerConfig, "Connected to " + getEndpointWithId(s).getName(), Snackbar.LENGTH_LONG).show();
+                    String gameName = getEndpointWithId(s).getName();
+                    Snackbar.make(parent, "Connected to " + gameName, Snackbar.LENGTH_LONG).show();
                     showLoadingDialog("Waiting for other players");
+                    endpoints.clear();
+                    endpoints.add(new Endpoint(s, gameName));
+                    isConnected = true;
                     break;
 
                 case ConnectionsStatusCodes.STATUS_CONNECTION_REJECTED:
-                    Snackbar.make(playerConfig, "Connection Rejected" , Snackbar.LENGTH_LONG).show();
+                    Snackbar.make(parent, "Connection Rejected" , Snackbar.LENGTH_LONG).show();
                     break;
 
                 case ConnectionsStatusCodes.STATUS_ERROR:
-                    Snackbar.make(playerConfig, "Connection error" , Snackbar.LENGTH_LONG).show();
+                    Snackbar.make(parent, "Connection error" , Snackbar.LENGTH_LONG).show();
                     break;
             }
         }
@@ -184,6 +191,39 @@ public class PlayerActivity extends AppCompatActivity {
                 case MafiaUtils.RESPONSE_TYPE_ROLE:
                     myRole = (String) r.getData();
                     ((TextView) getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title)).setText(myRole);
+                    animateViews(gameSetupLayout, sleepLayout);
+                    sleepText.setText(MafiaUtils.GO_TO_SLEEP);
+                    sleepButton.setEnabled(true);
+                    break;
+
+                case MafiaUtils.RESPONSE_TYPE_WAKE:
+                    alive = (ArrayList<String>) r.getData();
+                    deathText.setVisibility(View.GONE);
+                    animateViews(sleepLayout, voteLayout);
+                    voteAdapter = new GridViewAdapter(PlayerActivity.this, alive);
+                    voteList.setAdapter(voteAdapter);
+                    voteButton.setEnabled(true);
+                    break;
+
+                case MafiaUtils.RESPONSE_TYPE_ACK:
+                    if (((String) r.getData()).equals("OK")) {
+                        animateViews(voteLayout, sleepLayout);
+                        sleepButton.setEnabled(true);
+                    } else {
+                        Snackbar.make(parent, "Vote needs to be unanimous.", Snackbar.LENGTH_LONG).show();
+                        voteButton.setEnabled(true);
+                    }
+                    break;
+
+                case MafiaUtils.RESPONSE_TYPE_DEATH:
+                    alive = (ArrayList<String>) r.getData();
+                    deathText.setVisibility(View.VISIBLE);
+                    deathText.setText(MafiaUtils.WAKE_UP_MORNING + alive.get(0));
+                    alive.remove(0);
+                    animateViews(sleepLayout, voteLayout);
+                    voteAdapter = new GridViewAdapter(PlayerActivity.this, alive);
+                    voteList.setAdapter(voteAdapter);
+                    voteButton.setEnabled(true);
                     break;
             }
 
@@ -194,6 +234,96 @@ public class PlayerActivity extends AppCompatActivity {
 
         }
     };
+
+    private void setUpJoinButton(){
+        joinButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                playerName = nameField.getText().toString().trim();
+                if (TextUtils.isEmpty(playerName)) {
+                    playerNameLayout.setError("Name cannot be empty");
+                    if (nameField.requestFocus())
+                        showKeyboard();
+                } else if (gamesAdapter.getSelections().size() > 1) {
+                    Snackbar.make(parent, "Pick only one game.", Snackbar.LENGTH_LONG).show();
+                    playerNameLayout.setErrorEnabled(false);
+                } else if (gamesAdapter.getSelections().size() == 0) {
+                    Snackbar.make(parent, "Pick a game.", Snackbar.LENGTH_LONG).show();
+                    playerNameLayout.setErrorEnabled(false);
+                } else {
+                    showLoadingDialog("Connecting to " + games.get(gamesAdapter.getSelections().get(0)));
+                    mConnectionsClient.requestConnection(playerName,
+                            endpoints.get(gamesAdapter.getSelections().get(0)).getId(), connectToGame);
+                    playerNameLayout.setErrorEnabled(false);
+                }
+            }
+        });
+    }
+
+    private void setUpSleepButton(){
+        sleepButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Request r = new Request(MafiaUtils.REQUEST_TYPE_CONTINUE, "OK");
+                sendDataToMod(endpoints.get(0).getId(), r);
+                sleepButton.setEnabled(false);
+                showLoadingDialog("Please wait");
+            }
+        });
+    }
+
+    private void setUpVoteButton(){
+        voteButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (voteAdapter.getSelections().size() > 1)
+                    Snackbar.make(parent, "Pick only one player.", Snackbar.LENGTH_LONG).show();
+                else if (voteAdapter.getSelections().size() == 0)
+                    Snackbar.make(parent, "Pick a game.", Snackbar.LENGTH_LONG).show();
+                else {
+                    Request r = new Request(MafiaUtils.REQUEST_TYPE_VOTE, alive.get(voteAdapter.getSelections().get(0)));
+                    sendDataToMod(endpoints.get(0).getId(), r);
+                    voteButton.setEnabled(false);
+                    showLoadingDialog("Please wait");
+                }
+            }
+        });
+    }
+
+    private void sendDataToMod(String id, Object data) {
+        try {
+            mConnectionsClient.sendPayload(id, Payload.fromBytes(MafiaUtils.serialize(data)));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void animateViews(final View exitView, final View enterView) {
+        exitView.animate().scaleX(0.0f).scaleY(0.0f).setDuration(300).setListener(new Animator.AnimatorListener() {
+
+            @Override
+            public void onAnimationStart(Animator animator) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animator) {
+                exitView.setVisibility(View.GONE);
+                enterView.setVisibility(View.VISIBLE);
+                enterView.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.zoom_in));
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animator) {
+
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animator) {
+
+            }
+        });
+    }
 
     private Endpoint getEndpointWithId(String eid) {
         for (Endpoint e: endpoints)
@@ -212,12 +342,24 @@ public class PlayerActivity extends AppCompatActivity {
         loadingDialog.show();
     }
 
+    private void setUpActionBar() {
+        getSupportActionBar().setElevation(0);
+        getSupportActionBar().setDisplayShowCustomEnabled(true);
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
+        getSupportActionBar().setCustomView(R.layout.action_bar);
+        ((TextView) getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title)).setText(myRole);
+    }
+
     @Override
     public void onBackPressed() {
-        mConnectionsClient.stopDiscovery();
-        finish();
-        overridePendingTransition(R.anim.slide_from_left, R.anim.slide_to_right);
-        super.onBackPressed();
+        if (!isConnected) {
+            mConnectionsClient.stopDiscovery();
+            finish();
+            overridePendingTransition(R.anim.slide_from_left, R.anim.slide_to_right);
+            super.onBackPressed();
+        } else {
+            Snackbar.make(parent, "You cannot quit while in game", Snackbar.LENGTH_LONG).show();
+        }
     }
 
     public void showKeyboard() {

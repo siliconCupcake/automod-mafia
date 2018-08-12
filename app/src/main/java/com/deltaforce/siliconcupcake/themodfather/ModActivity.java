@@ -16,6 +16,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.GridView;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -57,6 +58,9 @@ public class ModActivity extends AppCompatActivity {
 
     @BindView(R.id.connection_status)
     TextView connectionCount;
+    
+    @BindView(R.id.mod_parent)
+    LinearLayout parent;
 
     int connections = 0;
     boolean playersJoined = false;
@@ -71,12 +75,7 @@ public class ModActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mod);
 
-        getSupportActionBar().setElevation(0);
-        getSupportActionBar().setDisplayShowCustomEnabled(true);
-        getSupportActionBar().setDisplayShowTitleEnabled(false);
-        getSupportActionBar().setCustomView(R.layout.action_bar);
-        TextView title = getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title);
-        title.setText("ModActivity");
+        setUpActionBar();
 
         ButterKnife.bind(this);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -86,45 +85,7 @@ public class ModActivity extends AppCompatActivity {
         characterCards.setAdapter(adapter);
         mConnectionsClient = Nearby.getConnectionsClient(this);
 
-        startGame.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (!playersJoined) {
-                    gameName = nameField.getText().toString().trim();
-                    if (TextUtils.isEmpty(gameName)) {
-                        nameLayout.setError("Name cannot be empty");
-                        if (nameField.requestFocus())
-                            showKeyboard();
-                    } else if (adapter.getSelections().size() < 2) {
-                        Snackbar.make(gameConfig, "Pick " + String.valueOf(3 - adapter.getSelections().size()) + " more.", Snackbar.LENGTH_LONG).show();
-                        nameLayout.setErrorEnabled(false);
-                    } else {
-                        connectionCount.setText("Connections\n" + String.valueOf(connections));
-                        animateTransition();
-                        nameLayout.setErrorEnabled(false);
-                        playersJoined = true;
-                        mConnectionsClient.startAdvertising(gameName,
-                                MafiaUtils.SERVICE_ID,
-                                connectToPlayers, new AdvertisingOptions(Strategy.P2P_CLUSTER));
-                    }
-                } else if (connections < 3) {
-                    Snackbar.make(gameConfig, "You need a minimum of 5 players to start.", Snackbar.LENGTH_LONG).show();
-                } else {
-                    mConnectionsClient.stopAdvertising();
-                    assignRoles(connections);
-                    for (int i = 0; i < players.size(); i++) {
-                        try {
-                            Response r = new Response(MafiaUtils.RESPONSE_TYPE_ROLE, roles.get(i));
-                            mConnectionsClient.sendPayload(players.get(i).getId(), Payload.fromBytes(MafiaUtils.serialize(r)));
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            Log.e("ModActivity", "Serialise failed");
-                        }
-                    }
-                    //TODO: START THE GAME
-                }
-            }
-        });
+        setUpStartButton();
     }
 
     private final ConnectionLifecycleCallback connectToPlayers = new ConnectionLifecycleCallback() {
@@ -174,6 +135,43 @@ public class ModActivity extends AppCompatActivity {
         }
     };
 
+    private void setUpStartButton(){
+        startGame.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!playersJoined) {
+                    gameName = nameField.getText().toString().trim();
+                    if (TextUtils.isEmpty(gameName)) {
+                        nameLayout.setError("Name cannot be empty");
+                        if (nameField.requestFocus())
+                            showKeyboard();
+                    } else if (adapter.getSelections().size() < 2) {
+                        Snackbar.make(parent, "Pick " + String.valueOf(3 - adapter.getSelections().size()) + " more.", Snackbar.LENGTH_LONG).show();
+                        nameLayout.setErrorEnabled(false);
+                    } else {
+                        connectionCount.setText("Connections\n" + String.valueOf(connections));
+                        animateTransition();
+                        nameLayout.setErrorEnabled(false);
+                        playersJoined = true;
+                        mConnectionsClient.startAdvertising(gameName,
+                                MafiaUtils.SERVICE_ID,
+                                connectToPlayers, new AdvertisingOptions(Strategy.P2P_CLUSTER));
+                    }
+                } else if (connections < 3) {
+                    Snackbar.make(parent, "You need a minimum of 5 players to start.", Snackbar.LENGTH_LONG).show();
+                } else {
+                    mConnectionsClient.stopAdvertising();
+                    assignRoles(connections);
+                    startGame.setEnabled(false);
+                    for (int i = 0; i < players.size(); i++) {
+                        Response r = new Response(MafiaUtils.RESPONSE_TYPE_ROLE, roles.get(i));
+                        sendDataToPlayer(players.get(i).getId(), r);
+                    }
+                }
+            }
+        });
+    }
+
     private void assignRoles(int n) {
         roles.add("Godfather");
         for (int i = 0; i < adapter.getSelections().size(); i++)
@@ -183,13 +181,28 @@ public class ModActivity extends AppCompatActivity {
         Collections.shuffle(roles);
     }
 
-    public void showKeyboard(){
+    private Endpoint getEndpointWithId(String eid) {
+        for (Endpoint e: players)
+            if (e.getId().equals(eid))
+                return e;
+        return null;
+    }
+
+    private void sendDataToPlayer(String id, Object data) {
+        try {
+            mConnectionsClient.sendPayload(id, Payload.fromBytes(MafiaUtils.serialize(data)));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void showKeyboard(){
         ((InputMethodManager) this.getSystemService(Context.INPUT_METHOD_SERVICE)).toggleSoftInput(
                 InputMethodManager.SHOW_FORCED,
                 InputMethodManager.HIDE_IMPLICIT_ONLY);
     }
 
-    public void animateTransition(){
+    private void animateTransition(){
         gameConfig.animate().scaleX(0.0f).scaleY(0.0f).setDuration(300).setListener(new Animator.AnimatorListener() {
 
             @Override
@@ -219,16 +232,22 @@ public class ModActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        mConnectionsClient.stopAdvertising();
-        finish();
-        overridePendingTransition(R.anim.slide_from_left, R.anim.slide_to_right);
-        super.onBackPressed();
+        if (connections != 0) {
+            mConnectionsClient.stopAdvertising();
+            finish();
+            overridePendingTransition(R.anim.slide_from_left, R.anim.slide_to_right);
+            super.onBackPressed();
+        } else {
+            Snackbar.make(parent, "You cannot quit while in game", Snackbar.LENGTH_LONG).show();
+        }
     }
 
-    private Endpoint getEndpointWithId(String eid) {
-        for (Endpoint e: players)
-            if (e.getId().equals(eid))
-                return e;
-        return null;
+    private void setUpActionBar() {
+        getSupportActionBar().setElevation(0);
+        getSupportActionBar().setDisplayShowCustomEnabled(true);
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
+        getSupportActionBar().setCustomView(R.layout.action_bar);
+        TextView title = getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title);
+        title.setText("ModActivity");
     }
 }
