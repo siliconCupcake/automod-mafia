@@ -8,7 +8,6 @@ import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.AnimationUtils;
@@ -41,8 +40,11 @@ import butterknife.ButterKnife;
 
 public class ModActivity extends AppCompatActivity {
 
-    @BindView(R.id.init_game)
-    Button startGame;
+    @BindView(R.id.mod_parent)
+    LinearLayout parent;
+
+    @BindView(R.id.config_layout)
+    RelativeLayout configLayout;
 
     @BindView(R.id.game_name_layout)
     TextInputLayout nameLayout;
@@ -50,17 +52,14 @@ public class ModActivity extends AppCompatActivity {
     @BindView(R.id.game_name)
     EditText nameField;
 
-    @BindView(R.id.character_picker)
-    GridView characterCards;
-
-    @BindView(R.id.game_config)
-    RelativeLayout gameConfig;
+    @BindView(R.id.character_list)
+    GridView characterList;
 
     @BindView(R.id.connection_status)
     TextView connectionCount;
-    
-    @BindView(R.id.mod_parent)
-    LinearLayout parent;
+
+    @BindView(R.id.init_game)
+    Button startGame;
 
     int connections = 0;
     boolean playersJoined = false;
@@ -80,9 +79,9 @@ public class ModActivity extends AppCompatActivity {
         ButterKnife.bind(this);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        characterCards.setVerticalScrollBarEnabled(false);
+        characterList.setVerticalScrollBarEnabled(false);
         adapter = new GridViewAdapter(this, MafiaUtils.CHARACTER_TYPES);
-        characterCards.setAdapter(adapter);
+        characterList.setAdapter(adapter);
         mConnectionsClient = Nearby.getConnectionsClient(this);
 
         setUpStartButton();
@@ -203,7 +202,7 @@ public class ModActivity extends AppCompatActivity {
     }
 
     private void animateTransition(){
-        gameConfig.animate().scaleX(0.0f).scaleY(0.0f).setDuration(300).setListener(new Animator.AnimatorListener() {
+        configLayout.animate().scaleX(0.0f).scaleY(0.0f).setDuration(300).setListener(new Animator.AnimatorListener() {
 
             @Override
             public void onAnimationStart(Animator animator) {
@@ -212,7 +211,7 @@ public class ModActivity extends AppCompatActivity {
 
             @Override
             public void onAnimationEnd(Animator animator) {
-                gameConfig.setVisibility(View.GONE);
+                configLayout.setVisibility(View.GONE);
                 connectionCount.setVisibility(View.VISIBLE);
                 connectionCount.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.zoom_in));
                 startGame.setText(R.string.start_game);
@@ -247,7 +246,6 @@ public class ModActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayShowCustomEnabled(true);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
         getSupportActionBar().setCustomView(R.layout.action_bar);
-        TextView title = getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title);
-        title.setText("ModActivity");
+        ((TextView) getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title)).setText("Game Settings");
     }
 }

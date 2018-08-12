@@ -47,6 +47,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_below="@id/player_name_layout"
+                android:layout_marginEnd="32dp"
                 android:layout_marginStart="32dp"
                 android:text="@string/join_game_instruction"
                 android:textSize="18sp" />
@@ -68,6 +69,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/game_list"
+                android:layout_marginEnd="32dp"
                 android:layout_marginStart="32dp"
                 android:text="@string/join_game_note"
                 android:textSize="18sp" />
@@ -95,7 +97,8 @@
         android:id="@+id/sleep_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:visibility="gone">
 
         <TextView
             android:id="@+id/sleep_text"
@@ -128,7 +131,8 @@
         android:id="@+id/vote_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:visibility="gone">
 
         <RelativeLayout
             android:layout_width="match_parent"
@@ -150,7 +154,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/death_text"
-                android:layout_margin="32dp"
+                android:layout_marginEnd="32dp"
+                android:layout_marginStart="32dp"
                 android:text="@string/join_game_instruction"
                 android:textSize="18sp" />
 
@@ -171,6 +176,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/vote_list"
+                android:layout_marginEnd="32dp"
                 android:layout_marginStart="32dp"
                 android:text="@string/join_game_note"
                 android:textSize="18sp" />

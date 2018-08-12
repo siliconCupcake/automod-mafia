@@ -4,6 +4,8 @@ import android.animation.Animator;
 import android.app.Dialog;
 import android.content.Context;
 
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.support.annotation.NonNull;
@@ -102,7 +104,7 @@ public class PlayerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
 
-        myRole = "PlayerActivity";
+        myRole = "Options";
         setUpActionBar();
 
         ButterKnife.bind(this);
@@ -172,24 +174,30 @@ public class PlayerActivity extends AppCompatActivity {
 
         @Override
         public void onDisconnected(@NonNull String s) {
-
+            showAlertDialog("Disconnected from game.", new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    isConnected = false;
+                    onBackPressed();
+                }
+            });
         }
     };
 
     private final PayloadCallback processPayload = new PayloadCallback() {
         @Override
         public void onPayloadReceived(@NonNull String s, @NonNull Payload payload) {
-            Response r = new Response();
+            Response response = new Response();
             loadingDialog.dismiss();
             try {
-                r = (Response) MafiaUtils.deserialize(payload.asBytes());
+                response = (Response) MafiaUtils.deserialize(payload.asBytes());
             } catch (Exception e) {
                 e.printStackTrace();
                 Log.e("PlayerActivity", "Deserialise failed");
             }
-            switch (r.getType()) {
+            switch (response.getType()) {
                 case MafiaUtils.RESPONSE_TYPE_ROLE:
-                    myRole = (String) r.getData();
+                    myRole = (String) response.getData();
                     ((TextView) getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title)).setText(myRole);
                     animateViews(gameSetupLayout, sleepLayout);
                     sleepText.setText(MafiaUtils.GO_TO_SLEEP);
@@ -197,16 +205,17 @@ public class PlayerActivity extends AppCompatActivity {
                     break;
 
                 case MafiaUtils.RESPONSE_TYPE_WAKE:
-                    alive = (ArrayList<String>) r.getData();
+                    alive = (ArrayList<String>) response.getData();
                     deathText.setVisibility(View.GONE);
                     animateViews(sleepLayout, voteLayout);
+                    setVotingInstruction();
                     voteAdapter = new GridViewAdapter(PlayerActivity.this, alive);
                     voteList.setAdapter(voteAdapter);
                     voteButton.setEnabled(true);
                     break;
 
                 case MafiaUtils.RESPONSE_TYPE_ACK:
-                    if (((String) r.getData()).equals("OK")) {
+                    if (((String) response.getData()).equals("OK")) {
                         animateViews(voteLayout, sleepLayout);
                         sleepButton.setEnabled(true);
                     } else {
@@ -216,7 +225,7 @@ public class PlayerActivity extends AppCompatActivity {
                     break;
 
                 case MafiaUtils.RESPONSE_TYPE_DEATH:
-                    alive = (ArrayList<String>) r.getData();
+                    alive = (ArrayList<String>) response.getData();
                     deathText.setVisibility(View.VISIBLE);
                     deathText.setText(MafiaUtils.WAKE_UP_MORNING + alive.get(0));
                     alive.remove(0);
@@ -225,6 +234,9 @@ public class PlayerActivity extends AppCompatActivity {
                     voteList.setAdapter(voteAdapter);
                     voteButton.setEnabled(true);
                     break;
+
+                case MafiaUtils.RESPONSE_TYPE_OVER:
+
             }
 
         }
@@ -298,6 +310,28 @@ public class PlayerActivity extends AppCompatActivity {
         }
     }
 
+    private void setVotingInstruction(){
+        String instruction = "";
+        switch (myRole) {
+            case "Doctor":
+                instruction = "Who do you want to save?";
+                break;
+
+            case "Slut":
+                instruction = "Who do you want to sleep with?";
+                break;
+
+            case "Cop":
+                instruction = "Who do you want to inspect?";
+                break;
+
+            case "Vigilante":
+                instruction = "Who do you want to kill?";
+                break;
+        }
+        voteInstruction.setText(instruction);
+    }
+
     private void animateViews(final View exitView, final View enterView) {
         exitView.animate().scaleX(0.0f).scaleY(0.0f).setDuration(300).setListener(new Animator.AnimatorListener() {
 
@@ -334,9 +368,20 @@ public class PlayerActivity extends AppCompatActivity {
 
     private void showLoadingDialog(String message){
         loadingDialog = new Dialog(PlayerActivity.this);
-        loadingDialog.setContentView(R.layout.dialog_connecting);
+        loadingDialog.setContentView(R.layout.dialog_loading);
         loadingDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         ((TextView) loadingDialog.findViewById(R.id.dialog_text)).setText(message);
+        loadingDialog.setCanceledOnTouchOutside(false);
+        loadingDialog.setCancelable(false);
+        loadingDialog.show();
+    }
+
+    private void showAlertDialog(String message, View.OnClickListener listener){
+        loadingDialog = new Dialog(PlayerActivity.this);
+        loadingDialog.setContentView(R.layout.dialog_alert);
+        loadingDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        ((TextView) loadingDialog.findViewById(R.id.dialog_text)).setText(message);
+        loadingDialog.findViewById(R.id.dialog_button).setOnClickListener(listener);
         loadingDialog.setCanceledOnTouchOutside(false);
         loadingDialog.setCancelable(false);
         loadingDialog.show();
