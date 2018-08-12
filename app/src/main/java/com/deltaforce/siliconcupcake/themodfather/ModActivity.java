@@ -8,7 +8,9 @@ import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -31,6 +33,7 @@ import com.google.android.gms.nearby.connection.PayloadTransferUpdate;
 import com.google.android.gms.nearby.connection.Strategy;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -61,6 +64,7 @@ public class ModActivity extends AppCompatActivity {
     GridViewAdapter adapter;
     ConnectionsClient mConnectionsClient;
     ArrayList<Endpoint> players = new ArrayList<>();
+    ArrayList<String> roles = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,6 +79,7 @@ public class ModActivity extends AppCompatActivity {
         title.setText("ModActivity");
 
         ButterKnife.bind(this);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         characterCards.setVerticalScrollBarEnabled(false);
         adapter = new GridViewAdapter(this, MafiaUtils.CHARACTER_TYPES);
@@ -90,7 +95,7 @@ public class ModActivity extends AppCompatActivity {
                         nameLayout.setError("Name cannot be empty");
                         if (nameField.requestFocus())
                             showKeyboard();
-                    } else if (adapter.getSelections().size() < 3) {
+                    } else if (adapter.getSelections().size() < 2) {
                         Snackbar.make(gameConfig, "Pick " + String.valueOf(3 - adapter.getSelections().size()) + " more.", Snackbar.LENGTH_LONG).show();
                         nameLayout.setErrorEnabled(false);
                     } else {
@@ -99,10 +104,23 @@ public class ModActivity extends AppCompatActivity {
                         nameLayout.setErrorEnabled(false);
                         playersJoined = true;
                         mConnectionsClient.startAdvertising(gameName,
-                                "com.deltaforce.siliconcupcake.themodfather",
+                                MafiaUtils.SERVICE_ID,
                                 connectToPlayers, new AdvertisingOptions(Strategy.P2P_CLUSTER));
                     }
+                } else if (connections < 3) {
+                    Snackbar.make(gameConfig, "You need a minimum of 5 players to start.", Snackbar.LENGTH_LONG).show();
                 } else {
+                    mConnectionsClient.stopAdvertising();
+                    assignRoles(connections);
+                    for (int i = 0; i < players.size(); i++) {
+                        try {
+                            Response r = new Response(MafiaUtils.RESPONSE_TYPE_ROLE, roles.get(i));
+                            mConnectionsClient.sendPayload(players.get(i).getId(), Payload.fromBytes(MafiaUtils.serialize(r)));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            Log.e("ModActivity", "Serialise failed");
+                        }
+                    }
                     //TODO: START THE GAME
                 }
             }
@@ -114,17 +132,7 @@ public class ModActivity extends AppCompatActivity {
         public void onConnectionInitiated(@NonNull String s, @NonNull ConnectionInfo connectionInfo) {
             Endpoint e = new Endpoint(s, connectionInfo.getEndpointName());
             players.add(e);
-            mConnectionsClient.acceptConnection(s, new PayloadCallback() {
-                @Override
-                public void onPayloadReceived(@NonNull String s, @NonNull Payload payload) {
-
-                }
-
-                @Override
-                public void onPayloadTransferUpdate(@NonNull String s, @NonNull PayloadTransferUpdate payloadTransferUpdate) {
-
-                }
-            });
+            mConnectionsClient.acceptConnection(s, processPayload);
         }
 
         @Override
@@ -136,6 +144,14 @@ public class ModActivity extends AppCompatActivity {
                     connections++;
                     connectionCount.setText("Connections\n" + String.valueOf(connections));
                     break;
+
+                case ConnectionsStatusCodes.STATUS_CONNECTION_REJECTED:
+                    players.remove(e);
+                    break;
+
+                case ConnectionsStatusCodes.STATUS_ERROR:
+                    players.remove(e);
+                    break;
             }
         }
 
@@ -145,6 +161,27 @@ public class ModActivity extends AppCompatActivity {
             connectionCount.setText("Connections\n" + String.valueOf(connections));
         }
     };
+
+    private final PayloadCallback processPayload = new PayloadCallback() {
+        @Override
+        public void onPayloadReceived(@NonNull String s, @NonNull Payload payload) {
+
+        }
+
+        @Override
+        public void onPayloadTransferUpdate(@NonNull String s, @NonNull PayloadTransferUpdate payloadTransferUpdate) {
+
+        }
+    };
+
+    private void assignRoles(int n) {
+        roles.add("Godfather");
+        for (int i = 0; i < adapter.getSelections().size(); i++)
+            roles.add(MafiaUtils.CHARACTER_TYPES.get(adapter.getSelections().get(i)));
+        roles.addAll(Collections.nCopies((n/3)-1, "Mafia"));
+        roles.addAll(Collections.nCopies(n-roles.size(), "Villager"));
+        Collections.shuffle(roles);
+    }
 
     public void showKeyboard(){
         ((InputMethodManager) this.getSystemService(Context.INPUT_METHOD_SERVICE)).toggleSoftInput(

@@ -12,8 +12,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
 
+import android.util.Log;
 import android.view.View;
-import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
@@ -67,18 +67,19 @@ public class PlayerActivity extends AppCompatActivity {
     ArrayList<Endpoint> endpoints = new ArrayList<>();
     ConnectionsClient mConnectionsClient;
     Dialog loadingDialog;
+    String myRole;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
 
+        myRole = "PlayerActivity";
         getSupportActionBar().setElevation(0);
         getSupportActionBar().setDisplayShowCustomEnabled(true);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
         getSupportActionBar().setCustomView(R.layout.action_bar);
-        TextView title = getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title);
-        title.setText("PlayerActivity");
+        ((TextView) getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title)).setText(myRole);
 
         ButterKnife.bind(this);
 
@@ -88,7 +89,7 @@ public class PlayerActivity extends AppCompatActivity {
         gameList.setAdapter(adapter);
         mConnectionsClient = Nearby.getConnectionsClient(this);
 
-        mConnectionsClient.startDiscovery("com.deltaforce.siliconcupcake.themodfather",
+        mConnectionsClient.startDiscovery(MafiaUtils.SERVICE_ID,
                 new EndpointDiscoveryCallback() {
                     @Override
                     public void onEndpointFound(@NonNull String s, @NonNull DiscoveredEndpointInfo discoveredEndpointInfo) {
@@ -128,6 +129,7 @@ public class PlayerActivity extends AppCompatActivity {
                     mConnectionsClient.requestConnection(playerName,
                             endpoints.get(adapter.getSelections().get(0)).getId(), connectToGame);
                     playerNameLayout.setErrorEnabled(false);
+                    myRole = "Mafia";
                 }
             }
         });
@@ -136,17 +138,7 @@ public class PlayerActivity extends AppCompatActivity {
     private final ConnectionLifecycleCallback connectToGame = new ConnectionLifecycleCallback() {
         @Override
         public void onConnectionInitiated(@NonNull String s, @NonNull ConnectionInfo connectionInfo) {
-            mConnectionsClient.acceptConnection(s, new PayloadCallback() {
-                @Override
-                public void onPayloadReceived(@NonNull String s, @NonNull Payload payload) {
-
-                }
-
-                @Override
-                public void onPayloadTransferUpdate(@NonNull String s, @NonNull PayloadTransferUpdate payloadTransferUpdate) {
-
-                }
-            });
+            mConnectionsClient.acceptConnection(s, processPayload);
         }
 
         @Override
@@ -156,6 +148,7 @@ public class PlayerActivity extends AppCompatActivity {
                 case ConnectionsStatusCodes.STATUS_OK:
                     mConnectionsClient.stopDiscovery();
                     gameSetup.setVisibility(View.GONE);
+                    mConnectionsClient.stopDiscovery();
                     Snackbar.make(playerConfig, "Connected to " + getEndpointWithId(s).getName(), Snackbar.LENGTH_LONG).show();
                     showLoadingDialog("Waiting for other players");
                     break;
@@ -172,6 +165,32 @@ public class PlayerActivity extends AppCompatActivity {
 
         @Override
         public void onDisconnected(@NonNull String s) {
+
+        }
+    };
+
+    private final PayloadCallback processPayload = new PayloadCallback() {
+        @Override
+        public void onPayloadReceived(@NonNull String s, @NonNull Payload payload) {
+            Response r = new Response();
+            loadingDialog.dismiss();
+            try {
+                r = (Response) MafiaUtils.deserialize(payload.asBytes());
+            } catch (Exception e) {
+                e.printStackTrace();
+                Log.e("PlayerActivity", "Deserialise failed");
+            }
+            switch (r.getType()) {
+                case MafiaUtils.RESPONSE_TYPE_ROLE:
+                    myRole = (String) r.getData();
+                    ((TextView) getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title)).setText(myRole);
+                    break;
+            }
+
+        }
+
+        @Override
+        public void onPayloadTransferUpdate(@NonNull String s, @NonNull PayloadTransferUpdate payloadTransferUpdate) {
 
         }
     };
