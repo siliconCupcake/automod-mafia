@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.GridView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -13,12 +14,19 @@ public class GridViewAdapter extends BaseAdapter {
 
     private Context context;
     private ArrayList<String> characters;
+    private ArrayList<Endpoint> players;
     private ArrayList<Integer> selections;
+    private boolean isPlayers;
 
-    public GridViewAdapter(Context context, ArrayList<String> characters) {
+    public GridViewAdapter(Context context, Object characters, boolean isPlayers) {
         this.context = context;
-        this.characters = characters;
         selections = new ArrayList<>();
+        this.isPlayers = isPlayers;
+        if (isPlayers)
+            this.players = (ArrayList<Endpoint>) characters;
+        else
+            this.characters = (ArrayList<String>) characters;
+
     }
 
     public View getView(final int position, View convertView, ViewGroup parent) {
@@ -45,7 +53,10 @@ public class GridViewAdapter extends BaseAdapter {
         });
 
         TextView content = convertView.findViewById(R.id.character_type);
-        content.setText(characters.get(position));
+        if (isPlayers)
+            content.setText(players.get(position).getName());
+        else
+            content.setText(characters.get(position));
 
         return convertView;
     }

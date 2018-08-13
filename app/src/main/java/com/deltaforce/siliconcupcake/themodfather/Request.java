@@ -18,7 +18,7 @@ public class Request implements Serializable {
         return type;
     }
 
-    public Object getData() {
+    public String getData() {
         return data;
     }
 

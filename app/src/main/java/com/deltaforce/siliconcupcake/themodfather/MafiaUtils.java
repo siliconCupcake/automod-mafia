@@ -38,6 +38,9 @@ public class MafiaUtils {
     public static final int REQUEST_TYPE_CONTINUE = 81;
     public static final int REQUEST_TYPE_VOTE = 82;
 
+    public static final String REQUEST_DATA_SLEPT = "SLEPT";
+    public static final String REQUEST_DATA_SKIP = "SKIP";
+
     public static void setDefaultFont(Context context,
                                       String staticTypefaceFieldName, String fontAssetName) {
         final Typeface regular = Typeface.createFromAsset(context.getAssets(),

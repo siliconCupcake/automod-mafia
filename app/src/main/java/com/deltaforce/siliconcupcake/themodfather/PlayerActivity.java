@@ -90,13 +90,17 @@ public class PlayerActivity extends AppCompatActivity {
     @BindView(R.id.vote_list)
     GridView voteList;
 
+    @BindView(R.id.skip_button)
+    Button skipButton;
+
     @BindView(R.id.vote_button)
     Button voteButton;
 
     GridViewAdapter gamesAdapter, voteAdapter;
     String playerName;
-    ArrayList<String> games, alive;
+    ArrayList<String> games;
     ArrayList<Endpoint> endpoints = new ArrayList<>();
+    ArrayList<Endpoint> alive;
     ConnectionsClient mConnectionsClient;
     Dialog loadingDialog;
     String myRole;
@@ -115,7 +119,7 @@ public class PlayerActivity extends AppCompatActivity {
 
         availableGameList.setVerticalScrollBarEnabled(false);
         games = new ArrayList<>();
-        gamesAdapter = new GridViewAdapter(this, games);
+        gamesAdapter = new GridViewAdapter(this, games, false);
         availableGameList.setAdapter(gamesAdapter);
         mConnectionsClient = Nearby.getConnectionsClient(this);
 
@@ -143,6 +147,7 @@ public class PlayerActivity extends AppCompatActivity {
         setUpJoinButton();
         setUpSleepButton();
         setUpVoteButton();
+        setUpSkipButton();
     }
 
     private final ConnectionLifecycleCallback connectToGame = new ConnectionLifecycleCallback() {
@@ -212,11 +217,12 @@ public class PlayerActivity extends AppCompatActivity {
                     break;
 
                 case MafiaUtils.RESPONSE_TYPE_WAKE:
-                    alive = (ArrayList<String>) response.getData();
+                    alive = (ArrayList<Endpoint>) response.getData();
                     deathText.setVisibility(View.GONE);
                     animateViews(sleepLayout, voteLayout);
+                    skipButton.setEnabled(true);
                     setVotingInstruction();
-                    voteAdapter = new GridViewAdapter(PlayerActivity.this, alive);
+                    voteAdapter = new GridViewAdapter(PlayerActivity.this, alive, true);
                     voteList.setAdapter(voteAdapter);
                     voteButton.setEnabled(true);
                     break;
@@ -226,18 +232,27 @@ public class PlayerActivity extends AppCompatActivity {
                         animateViews(voteLayout, sleepLayout);
                         sleepButton.setEnabled(true);
                     } else {
-                        Snackbar.make(parent, "Vote needs to be unanimous.", Snackbar.LENGTH_LONG).show();
+                        Snackbar.make(parent, (String) response.getData(), Snackbar.LENGTH_LONG).show();
                         voteButton.setEnabled(true);
                     }
                     break;
 
                 case MafiaUtils.RESPONSE_TYPE_DEATH:
-                    alive = (ArrayList<String>) response.getData();
+                    alive = (ArrayList<Endpoint>) response.getData();
+                    if (alive.get(0).getName().equals(playerName))
+                        showAlertDialog("You were killed", new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                isConnected = false;
+                                onBackPressed();
+                            }
+                        });
                     deathText.setVisibility(View.VISIBLE);
-                    deathText.setText(MafiaUtils.WAKE_UP_MORNING + alive.get(0));
+                    deathText.setText(MafiaUtils.WAKE_UP_MORNING + alive.get(0).getName());
                     alive.remove(0);
+                    skipButton.setEnabled(true);
                     animateViews(sleepLayout, voteLayout);
-                    voteAdapter = new GridViewAdapter(PlayerActivity.this, alive);
+                    voteAdapter = new GridViewAdapter(PlayerActivity.this, alive, true);
                     voteList.setAdapter(voteAdapter);
                     voteButton.setEnabled(true);
                     break;
@@ -250,9 +265,23 @@ public class PlayerActivity extends AppCompatActivity {
                             onBackPressed();
                         }
                     });
+                    break;
 
+                case MafiaUtils.RESPONSE_TYPE_COP:
+                    animateViews(voteLayout, sleepLayout);
+                    sleepButton.setEnabled(true);
+                    View.OnClickListener listener = new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            loadingDialog.dismiss();
+                        }
+                    };
+                    if ((Boolean) response.getData())
+                        showAlertDialog("Mafia", listener);
+                    else
+                        showAlertDialog("Villager", listener);
+                    break;
             }
-
         }
 
         @Override
@@ -290,7 +319,7 @@ public class PlayerActivity extends AppCompatActivity {
         sleepButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Request r = new Request(MafiaUtils.REQUEST_TYPE_CONTINUE, "OK");
+                Request r = new Request(MafiaUtils.REQUEST_TYPE_CONTINUE, MafiaUtils.REQUEST_DATA_SLEPT);
                 sendDataToMod(endpoints.get(0).getId(), r);
                 sleepButton.setEnabled(false);
                 showLoadingDialog("Please wait");
@@ -307,11 +336,22 @@ public class PlayerActivity extends AppCompatActivity {
                 else if (voteAdapter.getSelections().size() == 0)
                     Snackbar.make(parent, "Pick a game.", Snackbar.LENGTH_LONG).show();
                 else {
-                    Request r = new Request(MafiaUtils.REQUEST_TYPE_VOTE, alive.get(voteAdapter.getSelections().get(0)));
+                    Request r = new Request(MafiaUtils.REQUEST_TYPE_VOTE, alive.get(voteAdapter.getSelections().get(0)).getName());
                     sendDataToMod(endpoints.get(0).getId(), r);
                     voteButton.setEnabled(false);
                     showLoadingDialog("Please wait");
                 }
+            }
+        });
+    }
+
+    private void setUpSkipButton(){
+        skipButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Request r = new Request(MafiaUtils.REQUEST_TYPE_CONTINUE, MafiaUtils.REQUEST_DATA_SKIP);
+                sendDataToMod(endpoints.get(0).getId(), r);
+                showLoadingDialog("Please wait");
             }
         });
     }
@@ -329,18 +369,27 @@ public class PlayerActivity extends AppCompatActivity {
         switch (myRole) {
             case "Doctor":
                 instruction = "Who do you want to save?";
+                skipButton.setEnabled(false);
                 break;
 
             case "Slut":
                 instruction = "Who do you want to sleep with?";
+                alive.remove(getEndpointWithName(playerName));
+                voteAdapter.notifyDataSetChanged();
+                skipButton.setEnabled(false);
                 break;
 
             case "Cop":
                 instruction = "Who do you want to inspect?";
+                alive.remove(getEndpointWithName(playerName));
+                voteAdapter.notifyDataSetChanged();
+                skipButton.setEnabled(false);
                 break;
 
             case "Vigilante":
                 instruction = "Who do you want to kill?";
+                alive.remove(getEndpointWithName(playerName));
+                voteAdapter.notifyDataSetChanged();
                 break;
         }
         voteInstruction.setText(instruction);
@@ -376,6 +425,13 @@ public class PlayerActivity extends AppCompatActivity {
     private Endpoint getEndpointWithId(String eid) {
         for (Endpoint e: endpoints)
             if (e.getId().equals(eid))
+                return e;
+        return null;
+    }
+
+    private Endpoint getEndpointWithName (String name) {
+        for (Endpoint e: endpoints)
+            if (e.getId().equals(name))
                 return e;
         return null;
     }

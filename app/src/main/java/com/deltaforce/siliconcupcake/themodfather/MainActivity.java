@@ -33,8 +33,6 @@ public class MainActivity extends AppCompatActivity {
     @BindView(R.id.pick_player)
     Button pickPlayer;
 
-    public boolean permissionsGranted;
-    private int mode;
     public static final int MY_PERMISSIONS_REQUEST_PLAYER = 99;
     public static final int MY_PERMISSIONS_REQUEST_MOD = 91;
 
@@ -42,8 +40,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        permissionsGranted = getSharedPreferences("appdata", MODE_PRIVATE).getBoolean("Permissions", false);
 
         getSupportActionBar().setElevation(0);
         getSupportActionBar().setDisplayShowCustomEnabled(true);
@@ -55,13 +51,9 @@ public class MainActivity extends AppCompatActivity {
         pickPlayer.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mode = 1;
-                if (permissionsGranted) {
-                    getSharedPreferences("appdata", MODE_PRIVATE).edit().putBoolean("Permissions", permissionsGranted).apply();
+                if (checkPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_PERMISSIONS_REQUEST_PLAYER)) {
                     startActivity(new Intent(getApplicationContext(), PlayerActivity.class));
                     overridePendingTransition(R.anim.slide_from_right, R.anim.slide_to_left);
-                } else {
-                    permissionsGranted = checkPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, MY_PERMISSIONS_REQUEST_PLAYER);
                 }
             }
         });
@@ -69,13 +61,9 @@ public class MainActivity extends AppCompatActivity {
         pickMod.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mode = 0;
-                if (permissionsGranted) {
-                    getSharedPreferences("appdata", MODE_PRIVATE).edit().putBoolean("Permissions", permissionsGranted).apply();
+                if (checkPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, MY_PERMISSIONS_REQUEST_MOD)) {
                     startActivity(new Intent(getApplicationContext(), ModActivity.class));
                     overridePendingTransition(R.anim.slide_from_right, R.anim.slide_to_left);
-                } else {
-                    permissionsGranted = checkPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, MY_PERMISSIONS_REQUEST_MOD);
                 }
             }
         });
@@ -106,7 +94,6 @@ public class MainActivity extends AppCompatActivity {
         if (grantResults.length > 0) {
             for (int result : grantResults) {
                 if (result != PackageManager.PERMISSION_GRANTED) {
-                    permissionsGranted = false;
                     Snackbar.make(rolePicker, "Please allow all permissions to proceed", Snackbar.LENGTH_LONG).show();
                     return;
                 }
