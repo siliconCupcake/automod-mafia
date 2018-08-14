@@ -63,7 +63,10 @@ public class GridViewAdapter extends BaseAdapter {
 
     @Override
     public int getCount() {
-        return characters.size();
+        if (isPlayers)
+            return players.size();
+        else
+            return characters.size();
     }
 
     @Override

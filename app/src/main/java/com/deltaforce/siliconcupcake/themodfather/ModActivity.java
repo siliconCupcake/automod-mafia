@@ -62,7 +62,7 @@ public class ModActivity extends AppCompatActivity {
     @BindView(R.id.init_game)
     Button startGame;
 
-    int connections = 0, sleeping = 0, voted;
+    int connections = 0, sleeping = 0, voted = 0;
     boolean playersJoined = false;
     boolean isNight = true;
     String gameName;
@@ -101,7 +101,7 @@ public class ModActivity extends AppCompatActivity {
             Endpoint e = getEndpointWithId(s);
             switch (connectionResolution.getStatus().getStatusCode()) {
                 case ConnectionsStatusCodes.STATUS_OK:
-                    Snackbar.make(connectionCount, "Connected to " + e.getName() , Snackbar.LENGTH_LONG).show();
+                    Snackbar.make(connectionCount, "Connected to " + e.getName(), Snackbar.LENGTH_LONG).show();
                     connections++;
                     connectionCount.setText("Connections\n" + String.valueOf(connections));
                     break;
@@ -130,7 +130,7 @@ public class ModActivity extends AppCompatActivity {
             Request request = new Request();
             try {
                 request = (Request) MafiaUtils.deserialize(payload.asBytes());
-            } catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
                 Log.e("ModActivity", "Deserialize failed");
             }
@@ -140,9 +140,10 @@ public class ModActivity extends AppCompatActivity {
                     break;
 
                 case MafiaUtils.REQUEST_TYPE_VOTE:
-                    if (isNight) {
-
-                    } else {
+                    if (!isNight) {
+                        Endpoint votee = getEndpointWithName(request.getData());
+                        MafiaUtils.addToLogFile("Receive from: {" + getEndpointWithId(s).getName() + ", " + votee.getName() + "}", gameName + ".txt");
+                        votee.setVotes(votee.getVotes() + 1);
                         voted++;
                         if (voted == players.size()) {
                             voted = 0;
@@ -160,7 +161,12 @@ public class ModActivity extends AppCompatActivity {
         }
     };
 
-    private void setUpStartButton(){
+    private void clearAllVotes() {
+        for (Endpoint player : players)
+            player.setVotes(0);
+    }
+
+    private void setUpStartButton() {
         startGame.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -195,15 +201,16 @@ public class ModActivity extends AppCompatActivity {
                         sendDataToPlayer(players.get(i).getId(), r);
                     }
                     isNight = false;
+                    clearAllVotes();
                 }
             }
         });
     }
 
     private void handleContinueRequest(String data, String playerName) {
+        MafiaUtils.addToLogFile("Receive from: {" + playerName + ", " + data + "}", gameName + ".txt");
         switch (data) {
             case MafiaUtils.REQUEST_DATA_SLEPT:
-                MafiaUtils.addToLogFile("Receive from: {" + playerName + ", " + MafiaUtils.REQUEST_DATA_SLEPT + "}", gameName + ".txt");
                 if (!isNight) {
                     sleeping++;
                     if (sleeping == players.size()) {
@@ -212,15 +219,56 @@ public class ModActivity extends AppCompatActivity {
                         startNightVoting();
                     }
                 }
+                break;
+
+            case MafiaUtils.REQUEST_DATA_SKIP:
+                if (!isNight) {
+                    voted++;
+                    if (voted == players.size()) {
+                        voted = 0;
+                        isNight = true;
+                        calculateLynch();
+                    }
+                }
+
         }
     }
 
-    private void startNightVoting(){
+    private void startNightVoting() {
+        isNight = false;
+        players.add(0, new Endpoint("DEATH", " nobody"));
+        for (int i = 1; i < players.size(); i++) {
+            Response r = new Response(MafiaUtils.RESPONSE_TYPE_DEATH, players);
+            sendDataToPlayer(players.get(i).getId(), r);
+            MafiaUtils.addToLogFile("Send to: {" + players.get(i).getName() + ", " + r.getData(), gameName + ".txt");
+        }
+        players.remove(0);
         //TODO:WAKE PEOPLE IN ORDER AND HANDLE THEIR VOTES
     }
 
-    private void calculateLynch(){
-
+    private void calculateLynch() {
+        Collections.sort(players);
+        Response r;
+        String logText;
+        if (players.size() - getMafia().size() <= getMafia().size()) {
+            r = new Response(MafiaUtils.RESPONSE_TYPE_OVER, "Mafia");
+            logText = "Send to {%s, " + r.getData() + " wins}";
+        } else if (getMafia().size() == 0) {
+            r = new Response(MafiaUtils.RESPONSE_TYPE_OVER, "Villagers");
+            logText = "Send to {%s, " + r.getData() + " wins}";
+        } else if (players.get(0).getVotes() == players.get(1).getVotes()) {
+            r = new Response(MafiaUtils.RESPONSE_TYPE_ACK, "There is a tie, please vote again");
+            logText = "Send to {%s, Vote Again}";
+        } else {
+            r = new Response(MafiaUtils.RESPONSE_TYPE_LYNCH, players.get(0).getName());
+            logText = "Send to {%s, " + players.get(0).getName() + "}";
+            players.remove(0);
+        }
+        clearAllVotes();
+        for (Endpoint player : players) {
+            sendDataToPlayer(player.getId(), r);
+            MafiaUtils.addToLogFile(String.format(logText, player.getName()), gameName + ".txt");
+        }
     }
 
     private void assignRoles(int n) {
@@ -228,16 +276,30 @@ public class ModActivity extends AppCompatActivity {
         roles.add("Godfather");
         for (int i = 0; i < adapter.getSelections().size(); i++)
             roles.add(MafiaUtils.CHARACTER_TYPES.get(adapter.getSelections().get(i)));
-        roles.addAll(Collections.nCopies((n/3)-1, "Mafia"));
-        roles.addAll(Collections.nCopies(n-roles.size(), "Villager"));
+        roles.addAll(Collections.nCopies((n / 3) - 1, "Mafia"));
+        roles.addAll(Collections.nCopies(n - roles.size(), "Villager"));
         Collections.shuffle(roles);
         for (int i = 0; i < players.size(); i++)
             players.get(i).setRole(roles.get(i));
     }
 
     private Endpoint getEndpointWithId(String eid) {
-        for (Endpoint e: players)
+        for (Endpoint e : players)
             if (e.getId().equals(eid))
+                return e;
+        return null;
+    }
+
+    private Endpoint getEndpointWithName(String name) {
+        for (Endpoint e : players)
+            if (e.getName().equals(name))
+                return e;
+        return null;
+    }
+
+    private Endpoint getEndpointWithRole(String role) {
+        for (Endpoint e : players)
+            if (e.getRole().equals(role))
                 return e;
         return null;
     }
@@ -246,17 +308,26 @@ public class ModActivity extends AppCompatActivity {
         try {
             mConnectionsClient.sendPayload(id, Payload.fromBytes(MafiaUtils.serialize(data)));
         } catch (Exception e) {
+            Log.e("Sending data", "Failed");
             e.printStackTrace();
         }
     }
 
-    private void showKeyboard(){
+    private ArrayList<Endpoint> getMafia(){
+        ArrayList<Endpoint> list = new ArrayList<>();
+        for (Endpoint e: players)
+            if (e.getRole().equals("Mafia") || e.getRole().equals("Godfather"))
+                list.add(e);
+        return list;
+    }
+
+    private void showKeyboard() {
         ((InputMethodManager) this.getSystemService(Context.INPUT_METHOD_SERVICE)).toggleSoftInput(
                 InputMethodManager.SHOW_FORCED,
                 InputMethodManager.HIDE_IMPLICIT_ONLY);
     }
 
-    private void animateTransition(){
+    private void animateTransition() {
         configLayout.animate().scaleX(0.0f).scaleY(0.0f).setDuration(300).setListener(new Animator.AnimatorListener() {
 
             @Override

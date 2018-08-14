@@ -34,6 +34,7 @@ public class MafiaUtils {
     public static final int RESPONSE_TYPE_WAKE = 75;
     public static final int RESPONSE_TYPE_OVER = 76;
     public static final int RESPONSE_TYPE_COP = 72;
+    public static final int RESPONSE_TYPE_LYNCH = 77;
 
     public static final int REQUEST_TYPE_CONTINUE = 81;
     public static final int REQUEST_TYPE_VOTE = 82;
@@ -93,8 +94,5 @@ public class MafiaUtils {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        Log.e("Path", path);
-        Log.e("DirPath", logDir.getAbsolutePath());
-//        Log.e("FilePath", logFile.getAbsolutePath());
     }
 }

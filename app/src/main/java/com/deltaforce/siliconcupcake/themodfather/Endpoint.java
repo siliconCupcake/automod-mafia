@@ -2,7 +2,9 @@ package com.deltaforce.siliconcupcake.themodfather;
 
 import android.support.annotation.NonNull;
 
-public class Endpoint {
+import java.io.Serializable;
+
+public class Endpoint implements Comparable<Endpoint>, Serializable{
     @NonNull private final String id;
     @NonNull private final String name;
     private String role;
@@ -51,6 +53,11 @@ public class Endpoint {
     @Override
     public int hashCode() {
         return id.hashCode();
+    }
+
+    @Override
+    public int compareTo(@NonNull Endpoint endpoint) {
+        return endpoint.getVotes() - this.getVotes();
     }
 
     @Override

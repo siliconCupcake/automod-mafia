@@ -98,7 +98,6 @@ public class PlayerActivity extends AppCompatActivity {
 
     GridViewAdapter gamesAdapter, voteAdapter;
     String playerName;
-    ArrayList<String> games;
     ArrayList<Endpoint> endpoints = new ArrayList<>();
     ArrayList<Endpoint> alive;
     ConnectionsClient mConnectionsClient;
@@ -118,8 +117,7 @@ public class PlayerActivity extends AppCompatActivity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         availableGameList.setVerticalScrollBarEnabled(false);
-        games = new ArrayList<>();
-        gamesAdapter = new GridViewAdapter(this, games, false);
+        gamesAdapter = new GridViewAdapter(this, endpoints, true);
         availableGameList.setAdapter(gamesAdapter);
         mConnectionsClient = Nearby.getConnectionsClient(this);
 
@@ -129,7 +127,6 @@ public class PlayerActivity extends AppCompatActivity {
                     public void onEndpointFound(@NonNull String s, @NonNull DiscoveredEndpointInfo discoveredEndpointInfo) {
                         Endpoint e = new Endpoint(s, discoveredEndpointInfo.getEndpointName());
                         endpoints.add(e);
-                        games.add(e.getName());
                         gamesAdapter.notifyDataSetChanged();
                     }
 
@@ -137,7 +134,6 @@ public class PlayerActivity extends AppCompatActivity {
                     public void onEndpointLost(@NonNull String s) {
                         Endpoint e = getEndpointWithId(s);
                         if (e != null) {
-                            games.remove(e.getName());
                             endpoints.remove(e);
                             gamesAdapter.notifyDataSetChanged();
                         }
@@ -196,7 +192,9 @@ public class PlayerActivity extends AppCompatActivity {
         @Override
         public void onPayloadReceived(@NonNull String s, @NonNull Payload payload) {
             Response response = new Response();
+            Log.e("Before dismiss", s);
             loadingDialog.dismiss();
+            Log.e("After dismiss", s);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE));
             else
@@ -237,24 +235,45 @@ public class PlayerActivity extends AppCompatActivity {
                     }
                     break;
 
-                case MafiaUtils.RESPONSE_TYPE_DEATH:
-                    alive = (ArrayList<Endpoint>) response.getData();
-                    if (alive.get(0).getName().equals(playerName))
+                case MafiaUtils.RESPONSE_TYPE_LYNCH:
+                    if (response.getData().equals(playerName))
                         showAlertDialog("You were killed", new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
-                                isConnected = false;
-                                onBackPressed();
+                                quitGame();
                             }
                         });
-                    deathText.setVisibility(View.VISIBLE);
-                    deathText.setText(MafiaUtils.WAKE_UP_MORNING + alive.get(0).getName());
-                    alive.remove(0);
-                    skipButton.setEnabled(true);
-                    animateViews(sleepLayout, voteLayout);
-                    voteAdapter = new GridViewAdapter(PlayerActivity.this, alive, true);
-                    voteList.setAdapter(voteAdapter);
-                    voteButton.setEnabled(true);
+                    else {
+                        showAlertDialog(response.getData() + " was killed", new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                loadingDialog.dismiss();
+                                animateViews(voteLayout, sleepLayout);
+                                sleepButton.setEnabled(true);
+                            }
+                        });
+                    }
+                    break;
+
+                case MafiaUtils.RESPONSE_TYPE_DEATH:
+                    alive = (ArrayList<Endpoint>) response.getData();
+                    if (alive.get(0).getName().equals(playerName)) {
+                        showAlertDialog("You were killed", new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                quitGame();
+                            }
+                        });
+                    } else {
+                        deathText.setVisibility(View.VISIBLE);
+                        deathText.setText(MafiaUtils.WAKE_UP_MORNING + alive.get(0).getName());
+                        alive.remove(0);
+                        skipButton.setEnabled(true);
+                        animateViews(sleepLayout, voteLayout);
+                        voteAdapter = new GridViewAdapter(PlayerActivity.this, alive, true);
+                        voteList.setAdapter(voteAdapter);
+                        voteButton.setEnabled(true);
+                    }
                     break;
 
                 case MafiaUtils.RESPONSE_TYPE_OVER:
@@ -262,7 +281,7 @@ public class PlayerActivity extends AppCompatActivity {
                     showAlertDialog("The " + winner + " win", new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            onBackPressed();
+                            quitGame();
                         }
                     });
                     break;
@@ -306,7 +325,7 @@ public class PlayerActivity extends AppCompatActivity {
                     Snackbar.make(parent, "Pick a game.", Snackbar.LENGTH_LONG).show();
                     playerNameLayout.setErrorEnabled(false);
                 } else {
-                    showLoadingDialog("Connecting to " + games.get(gamesAdapter.getSelections().get(0)));
+                    showLoadingDialog("Connecting to " + endpoints.get(gamesAdapter.getSelections().get(0)).getName());
                     mConnectionsClient.requestConnection(playerName,
                             endpoints.get(gamesAdapter.getSelections().get(0)).getId(), connectToGame);
                     playerNameLayout.setErrorEnabled(false);
@@ -343,6 +362,12 @@ public class PlayerActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    private void quitGame(){
+        isConnected = false;
+        mConnectionsClient.disconnectFromEndpoint(endpoints.get(0).getId());
+        onBackPressed();
     }
 
     private void setUpSkipButton(){
@@ -423,9 +448,11 @@ public class PlayerActivity extends AppCompatActivity {
     }
 
     private Endpoint getEndpointWithId(String eid) {
-        for (Endpoint e: endpoints)
-            if (e.getId().equals(eid))
+        for (Endpoint e: endpoints) {
+            if (e.getId().equals(eid)) {
                 return e;
+            }
+        }
         return null;
     }
 
