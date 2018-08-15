@@ -218,8 +218,8 @@ public class PlayerActivity extends AppCompatActivity {
                     deathText.setVisibility(View.GONE);
                     animateViews(sleepLayout, voteLayout);
                     skipButton.setEnabled(true);
-                    setVotingInstruction();
                     voteAdapter = new GridViewAdapter(PlayerActivity.this, alive, true);
+                    setVotingInstruction();
                     voteList.setAdapter(voteAdapter);
                     voteButton.setEnabled(true);
                     break;
@@ -418,6 +418,7 @@ public class PlayerActivity extends AppCompatActivity {
             case "Cop":
                 instruction = "Who do you want to inspect?";
                 alive.remove(getEndpointWithName(playerName));
+                voteAdapter.notifyDataSetChanged();
                 skipButton.setEnabled(false);
                 break;
 
@@ -464,7 +465,7 @@ public class PlayerActivity extends AppCompatActivity {
 
     private Endpoint getEndpointWithName (String name) {
         for (Endpoint e: endpoints)
-            if (e.getId().equals(name))
+            if (e.getName().equals(name))
                 return e;
         return null;
     }
