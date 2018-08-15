@@ -21,6 +21,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -101,7 +102,7 @@ public class PlayerActivity extends AppCompatActivity {
     ArrayList<Endpoint> endpoints = new ArrayList<>();
     ArrayList<Endpoint> alive;
     ConnectionsClient mConnectionsClient;
-    Dialog loadingDialog;
+    Dialog loadingDialog, alertDialog;
     String myRole;
     boolean isConnected = false;
 
@@ -181,6 +182,7 @@ public class PlayerActivity extends AppCompatActivity {
             showAlertDialog("Disconnected from game.", new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
+                    alertDialog.dismiss();
                     isConnected = false;
                     onBackPressed();
                 }
@@ -192,9 +194,7 @@ public class PlayerActivity extends AppCompatActivity {
         @Override
         public void onPayloadReceived(@NonNull String s, @NonNull Payload payload) {
             Response response = new Response();
-            Log.e("Before dismiss", s);
             loadingDialog.dismiss();
-            Log.e("After dismiss", s);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE));
             else
@@ -210,7 +210,6 @@ public class PlayerActivity extends AppCompatActivity {
                     myRole = (String) response.getData();
                     ((TextView) getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title)).setText(myRole);
                     animateViews(gameSetupLayout, sleepLayout);
-                    sleepText.setText(MafiaUtils.GO_TO_SLEEP);
                     sleepButton.setEnabled(true);
                     break;
 
@@ -240,6 +239,7 @@ public class PlayerActivity extends AppCompatActivity {
                         showAlertDialog("You were killed", new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
+                                alertDialog.dismiss();
                                 quitGame();
                             }
                         });
@@ -247,7 +247,7 @@ public class PlayerActivity extends AppCompatActivity {
                         showAlertDialog(response.getData() + " was killed", new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
-                                loadingDialog.dismiss();
+                                alertDialog.dismiss();
                                 animateViews(voteLayout, sleepLayout);
                                 sleepButton.setEnabled(true);
                             }
@@ -261,6 +261,7 @@ public class PlayerActivity extends AppCompatActivity {
                         showAlertDialog("You were killed", new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
+                                alertDialog.dismiss();
                                 quitGame();
                             }
                         });
@@ -281,18 +282,19 @@ public class PlayerActivity extends AppCompatActivity {
                     showAlertDialog("The " + winner + " win", new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
+                            alertDialog.dismiss();
                             quitGame();
                         }
                     });
                     break;
 
                 case MafiaUtils.RESPONSE_TYPE_COP:
-                    animateViews(voteLayout, sleepLayout);
-                    sleepButton.setEnabled(true);
                     View.OnClickListener listener = new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            loadingDialog.dismiss();
+                            alertDialog.dismiss();
+                            animateViews(voteLayout, sleepLayout);
+                            sleepButton.setEnabled(true);
                         }
                     };
                     if ((Boolean) response.getData())
@@ -392,6 +394,14 @@ public class PlayerActivity extends AppCompatActivity {
     private void setVotingInstruction(){
         String instruction = "";
         switch (myRole) {
+            case "Mafia":
+                instruction = "Who do you want to kill?";
+                break;
+
+            case "Godfather":
+                instruction = "Who do you want to kill?";
+                break;
+
             case "Doctor":
                 instruction = "Who do you want to save?";
                 skipButton.setEnabled(false);
@@ -407,7 +417,6 @@ public class PlayerActivity extends AppCompatActivity {
             case "Cop":
                 instruction = "Who do you want to inspect?";
                 alive.remove(getEndpointWithName(playerName));
-                voteAdapter.notifyDataSetChanged();
                 skipButton.setEnabled(false);
                 break;
 
@@ -421,30 +430,26 @@ public class PlayerActivity extends AppCompatActivity {
     }
 
     private void animateViews(final View exitView, final View enterView) {
-        exitView.animate().scaleX(0.0f).scaleY(0.0f).setDuration(300).setListener(new Animator.AnimatorListener() {
-
+        Animation anim = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.zoom_out);
+        anim.setAnimationListener(new Animation.AnimationListener() {
             @Override
-            public void onAnimationStart(Animator animator) {
+            public void onAnimationStart(Animation animation) {
 
             }
 
             @Override
-            public void onAnimationEnd(Animator animator) {
+            public void onAnimationEnd(Animation animation) {
                 exitView.setVisibility(View.GONE);
                 enterView.setVisibility(View.VISIBLE);
                 enterView.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.zoom_in));
             }
 
             @Override
-            public void onAnimationCancel(Animator animator) {
-
-            }
-
-            @Override
-            public void onAnimationRepeat(Animator animator) {
+            public void onAnimationRepeat(Animation animation) {
 
             }
         });
+        exitView.startAnimation(anim);
     }
 
     private Endpoint getEndpointWithId(String eid) {
@@ -474,14 +479,14 @@ public class PlayerActivity extends AppCompatActivity {
     }
 
     private void showAlertDialog(String message, View.OnClickListener listener){
-        loadingDialog = new Dialog(PlayerActivity.this);
-        loadingDialog.setContentView(R.layout.dialog_alert);
-        loadingDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        ((TextView) loadingDialog.findViewById(R.id.dialog_text)).setText(message);
-        loadingDialog.findViewById(R.id.dialog_button).setOnClickListener(listener);
-        loadingDialog.setCanceledOnTouchOutside(false);
-        loadingDialog.setCancelable(false);
-        loadingDialog.show();
+        alertDialog = new Dialog(PlayerActivity.this);
+        alertDialog.setContentView(R.layout.dialog_alert);
+        alertDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        ((TextView) alertDialog.findViewById(R.id.dialog_text)).setText(message);
+        alertDialog.findViewById(R.id.dialog_button).setOnClickListener(listener);
+        alertDialog.setCanceledOnTouchOutside(false);
+        alertDialog.setCancelable(false);
+        alertDialog.show();
     }
 
     private void setUpActionBar() {

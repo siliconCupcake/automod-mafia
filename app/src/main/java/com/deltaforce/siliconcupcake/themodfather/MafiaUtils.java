@@ -26,7 +26,6 @@ public class MafiaUtils {
     public static final ArrayList<String> CHARACTER_TYPES = new ArrayList<>(Arrays.asList("Doctor", "Slut", "Cop", "Vigilante", "Arsonist"));
 
     public static final String WAKE_UP_MORNING = "Village wakes up to the death of ";
-    public static final String GO_TO_SLEEP = "Go to sleep";
 
     public static final int RESPONSE_TYPE_ROLE = 71;
     public static final int RESPONSE_TYPE_DEATH = 74;
