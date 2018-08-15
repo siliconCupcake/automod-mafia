@@ -271,6 +271,7 @@ public class PlayerActivity extends AppCompatActivity {
                         alive.remove(0);
                         skipButton.setEnabled(true);
                         animateViews(sleepLayout, voteLayout);
+                        voteInstruction.setText("Who would you like to lynch?");
                         voteAdapter = new GridViewAdapter(PlayerActivity.this, alive, true);
                         voteList.setAdapter(voteAdapter);
                         voteButton.setEnabled(true);
@@ -279,7 +280,7 @@ public class PlayerActivity extends AppCompatActivity {
 
                 case MafiaUtils.RESPONSE_TYPE_OVER:
                     String winner = (String) response.getData();
-                    showAlertDialog("The " + winner + " win", new View.OnClickListener() {
+                    showAlertDialog("The " + winner + " win.", new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
                             alertDialog.dismiss();
