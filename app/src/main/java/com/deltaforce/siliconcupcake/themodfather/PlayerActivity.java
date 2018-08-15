@@ -111,6 +111,8 @@ public class PlayerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
 
+        sleepLayout.setVisibility(View.GONE);
+        voteLayout.setVisibility(View.GONE);
         myRole = "Game Settings";
         setUpActionBar();
 
@@ -118,6 +120,7 @@ public class PlayerActivity extends AppCompatActivity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         availableGameList.setVerticalScrollBarEnabled(false);
+        voteList.setVerticalScrollBarEnabled(false);
         gamesAdapter = new GridViewAdapter(this, endpoints, true);
         availableGameList.setAdapter(gamesAdapter);
         mConnectionsClient = Nearby.getConnectionsClient(this);
@@ -218,8 +221,8 @@ public class PlayerActivity extends AppCompatActivity {
                     deathText.setVisibility(View.GONE);
                     animateViews(sleepLayout, voteLayout);
                     skipButton.setEnabled(true);
-                    voteAdapter = new GridViewAdapter(PlayerActivity.this, alive, true);
                     setVotingInstruction();
+                    voteAdapter = new GridViewAdapter(PlayerActivity.this, alive, true);
                     voteList.setAdapter(voteAdapter);
                     voteButton.setEnabled(true);
                     break;
@@ -411,21 +414,18 @@ public class PlayerActivity extends AppCompatActivity {
             case "Slut":
                 instruction = "Who do you want to sleep with?";
                 alive.remove(getEndpointWithName(playerName));
-                voteAdapter.notifyDataSetChanged();
                 skipButton.setEnabled(false);
                 break;
 
             case "Cop":
                 instruction = "Who do you want to inspect?";
                 alive.remove(getEndpointWithName(playerName));
-                voteAdapter.notifyDataSetChanged();
                 skipButton.setEnabled(false);
                 break;
 
             case "Vigilante":
                 instruction = "Who do you want to kill?";
                 alive.remove(getEndpointWithName(playerName));
-                voteAdapter.notifyDataSetChanged();
                 break;
         }
         voteInstruction.setText(instruction);

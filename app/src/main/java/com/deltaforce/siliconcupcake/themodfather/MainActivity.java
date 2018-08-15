@@ -1,8 +1,11 @@
 package com.deltaforce.siliconcupcake.themodfather;
 
 import android.Manifest;
+import android.app.Dialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
@@ -45,6 +48,23 @@ public class MainActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayShowCustomEnabled(true);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
         getSupportActionBar().setCustomView(R.layout.action_bar);
+        getSupportActionBar().getCustomView().findViewById(R.id.info_button).setVisibility(View.VISIBLE);
+        getSupportActionBar().getCustomView().findViewById(R.id.info_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                final Dialog alertDialog = new Dialog(MainActivity.this);
+                alertDialog.setContentView(R.layout.dialog_alert);
+                alertDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+                ((TextView) alertDialog.findViewById(R.id.dialog_text)).setText(getResources().getText(R.string.main_instructions));
+                alertDialog.findViewById(R.id.dialog_button).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        alertDialog.dismiss();
+                    }
+                });
+                alertDialog.show();
+            }
+        });
 
         ButterKnife.bind(this);
 
