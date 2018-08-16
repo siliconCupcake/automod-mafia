@@ -18,7 +18,11 @@
     <string name="morning_notification">The Village wakes up to the death of </string>
     <string name="ok_button">OK</string>
     <string name="skip_text">Skip</string>
-    <string name="main_instructions">1. Connect the mod and all players to a common wifi for better connectivity.\n\n2. DO NOT turn off the bluetooth, it is required to connect players to the mod.\n\n3. If it takes too long to discover or connect to hosts, restart the player app.\n\n4. Disconnecting in the middle of the game treats you to be dead.\n\n5. Location permissions are required to set up the connection and storage permissions for logging.</string>
+    <string name="main_instructions">1. Connect the mod and all players to a common wifi for better connectivity.
+        \n\n2. DO NOT turn off the bluetooth, it is required to connect players to the mod.
+        \n\n3. If it takes too long to discover or connect to hosts, restart the player app.
+        \n\n4. Disconnecting in the middle of the game treats you to be dead.
+        \n\n5. Location permissions are required to set up the connection and storage permissions for logging.</string>
     <string name="go_to_sleep">Go to sleep</string>
 </resources>
 

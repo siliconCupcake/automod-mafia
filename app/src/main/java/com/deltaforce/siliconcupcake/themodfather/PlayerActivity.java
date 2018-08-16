@@ -111,12 +111,12 @@ public class PlayerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
 
-        sleepLayout.setVisibility(View.GONE);
-        voteLayout.setVisibility(View.GONE);
         myRole = "Game Settings";
         setUpActionBar();
 
         ButterKnife.bind(this);
+        sleepLayout.setVisibility(View.GONE);
+        voteLayout.setVisibility(View.GONE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         availableGameList.setVerticalScrollBarEnabled(false);
