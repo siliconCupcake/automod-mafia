@@ -464,7 +464,7 @@ public class PlayerActivity extends AppCompatActivity {
     }
 
     private Endpoint getEndpointWithName (String name) {
-        for (Endpoint e: endpoints)
+        for (Endpoint e: alive)
             if (e.getName().equals(name))
                 return e;
         return null;
