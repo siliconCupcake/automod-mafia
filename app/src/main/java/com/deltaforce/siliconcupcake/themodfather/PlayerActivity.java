@@ -171,11 +171,11 @@ public class PlayerActivity extends AppCompatActivity {
                     break;
 
                 case ConnectionsStatusCodes.STATUS_CONNECTION_REJECTED:
-                    Snackbar.make(parent, "Connection Rejected" , Snackbar.LENGTH_LONG).show();
+                    Snackbar.make(parent, "Connection Rejected", Snackbar.LENGTH_LONG).show();
                     break;
 
                 case ConnectionsStatusCodes.STATUS_ERROR:
-                    Snackbar.make(parent, "Connection error" , Snackbar.LENGTH_LONG).show();
+                    Snackbar.make(parent, "Connection error", Snackbar.LENGTH_LONG).show();
                     break;
             }
         }
@@ -211,7 +211,13 @@ public class PlayerActivity extends AppCompatActivity {
             switch (response.getType()) {
                 case MafiaUtils.RESPONSE_TYPE_ROLE:
                     myRole = (String) response.getData();
-                    ((TextView) getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title)).setText(myRole);
+                    showAlertDialog("You are " + myRole, new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            alertDialog.dismiss();
+                        }
+                    });
+                    ((TextView) getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title)).setText("Night");
                     animateViews(gameSetupLayout, sleepLayout);
                     sleepButton.setEnabled(true);
                     break;
@@ -253,6 +259,7 @@ public class PlayerActivity extends AppCompatActivity {
                                 alertDialog.dismiss();
                                 animateViews(voteLayout, sleepLayout);
                                 sleepButton.setEnabled(true);
+                                ((TextView) getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title)).setText("Night");
                             }
                         });
                     }
@@ -260,6 +267,7 @@ public class PlayerActivity extends AppCompatActivity {
 
                 case MafiaUtils.RESPONSE_TYPE_DEATH:
                     alive = (ArrayList<Endpoint>) response.getData();
+                    ((TextView) getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title)).setText("Day");
                     if (alive.get(0).getName().equals(playerName)) {
                         showAlertDialog("You were killed", new View.OnClickListener() {
                             @Override
@@ -302,9 +310,9 @@ public class PlayerActivity extends AppCompatActivity {
                         }
                     };
                     if ((Boolean) response.getData())
-                        showAlertDialog("Mafia", listener);
+                        showAlertDialog("That was the Mafia", listener);
                     else
-                        showAlertDialog("Villager", listener);
+                        showAlertDialog("That was a Villager", listener);
                     break;
             }
         }
@@ -315,7 +323,7 @@ public class PlayerActivity extends AppCompatActivity {
         }
     };
 
-    private void setUpJoinButton(){
+    private void setUpJoinButton() {
         joinButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -340,7 +348,7 @@ public class PlayerActivity extends AppCompatActivity {
         });
     }
 
-    private void setUpSleepButton(){
+    private void setUpSleepButton() {
         sleepButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -352,7 +360,7 @@ public class PlayerActivity extends AppCompatActivity {
         });
     }
 
-    private void setUpVoteButton(){
+    private void setUpVoteButton() {
         voteButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -370,13 +378,13 @@ public class PlayerActivity extends AppCompatActivity {
         });
     }
 
-    private void quitGame(){
+    private void quitGame() {
         isConnected = false;
         mConnectionsClient.disconnectFromEndpoint(endpoints.get(0).getId());
         onBackPressed();
     }
 
-    private void setUpSkipButton(){
+    private void setUpSkipButton() {
         skipButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -395,7 +403,7 @@ public class PlayerActivity extends AppCompatActivity {
         }
     }
 
-    private void setVotingInstruction(){
+    private void setVotingInstruction() {
         String instruction = "";
         switch (myRole) {
             case "Mafia":
@@ -455,7 +463,7 @@ public class PlayerActivity extends AppCompatActivity {
     }
 
     private Endpoint getEndpointWithId(String eid) {
-        for (Endpoint e: endpoints) {
+        for (Endpoint e : endpoints) {
             if (e.getId().equals(eid)) {
                 return e;
             }
@@ -463,14 +471,14 @@ public class PlayerActivity extends AppCompatActivity {
         return null;
     }
 
-    private Endpoint getEndpointWithName (String name) {
-        for (Endpoint e: alive)
+    private Endpoint getEndpointWithName(String name) {
+        for (Endpoint e : alive)
             if (e.getName().equals(name))
                 return e;
         return null;
     }
 
-    private void showLoadingDialog(String message){
+    private void showLoadingDialog(String message) {
         loadingDialog = new Dialog(PlayerActivity.this);
         loadingDialog.setContentView(R.layout.dialog_loading);
         loadingDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
@@ -480,7 +488,7 @@ public class PlayerActivity extends AppCompatActivity {
         loadingDialog.show();
     }
 
-    private void showAlertDialog(String message, View.OnClickListener listener){
+    private void showAlertDialog(String message, View.OnClickListener listener) {
         alertDialog = new Dialog(PlayerActivity.this);
         alertDialog.setContentView(R.layout.dialog_alert);
         alertDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));

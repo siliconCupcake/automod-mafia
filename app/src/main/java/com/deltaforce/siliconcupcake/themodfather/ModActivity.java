@@ -281,7 +281,7 @@ public class ModActivity extends AppCompatActivity {
                         nameLayout.setError("Name cannot be empty");
                         if (nameField.requestFocus())
                             showKeyboard();
-                    } else if (adapter.getSelections().size() < 2) {
+                    } else if (adapter.getSelections().size() < 3) {
                         Snackbar.make(parent, "Pick " + String.valueOf(3 - adapter.getSelections().size()) + " more.", Snackbar.LENGTH_LONG).show();
                         nameLayout.setErrorEnabled(false);
                     } else {
@@ -293,8 +293,8 @@ public class ModActivity extends AppCompatActivity {
                                 MafiaUtils.SERVICE_ID,
                                 connectToPlayers, new AdvertisingOptions(Strategy.P2P_CLUSTER));
                     }
-                } else if (players.size() < 3) {
-                    Snackbar.make(parent, "You need a minimum of 5 players to start.", Snackbar.LENGTH_LONG).show();
+                } else if (players.size() < 6) {
+                    Snackbar.make(parent, "You need a minimum of 6 players to start.", Snackbar.LENGTH_LONG).show();
                 } else if (players.size() < adapter.getSelections().size() + players.size() / 3) {
                     Snackbar.make(parent, "You have insufficient players.", Snackbar.LENGTH_LONG).show();
                 } else {
@@ -465,13 +465,13 @@ public class ModActivity extends AppCompatActivity {
         for (int i = 0; i < adapter.getSelections().size(); i++) {
             roles.add(MafiaUtils.CHARACTER_TYPES.get(adapter.getSelections().get(i)));
         }
+        Collections.sort(roles, Collections.<String>reverseOrder());
         gameRoles.addAll(roles);
         roles.add("Godfather");
         roles.addAll(Collections.nCopies((n / 3) - 1, "Mafia"));
         roles.addAll(Collections.nCopies(n - roles.size(), "Villager"));
         Collections.shuffle(roles);
-        Collections.shuffle(roles);
-        Collections.shuffle(roles);
+        Collections.shuffle(players);
         for (int i = 0; i < players.size(); i++)
             players.get(i).setRole(roles.get(i));
     }
