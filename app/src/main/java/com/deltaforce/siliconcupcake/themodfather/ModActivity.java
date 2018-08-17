@@ -149,7 +149,7 @@ public class ModActivity extends AppCompatActivity {
                             voted = 0;
                             calculateLynch();
                         }
-                    } else if (player.getRole().equals("Mafia") || player.getRole().equals("Godfather")) {
+                    } else if (getMafia().contains(player)) {
                         if (sleeping == getMafia().size()) {
                             sleeping = 0;
                             nightVoting();
@@ -193,7 +193,7 @@ public class ModActivity extends AppCompatActivity {
                             voted = 0;
                             calculateLynch();
                         }
-                    } else if (getEndpointWithId(s).getRole().equals("Mafia") || getEndpointWithId(s).getRole().equals("Godfather")) {
+                    } else if (getMafia().contains(getEndpointWithId(s))) {
                         votee = getEndpointWithName(request.getData());
                         MafiaUtils.addToLogFile("Receive from: {" + getEndpointWithId(s).getName() + ", VOTE: " + votee.getName() + "}", gameName + ".txt");
                         votee.setVotes(votee.getVotes() + 1);
@@ -303,16 +303,20 @@ public class ModActivity extends AppCompatActivity {
                     }
                 } else if (players.size() < 6) {
                     Snackbar.make(parent, "You need a minimum of 6 players to start.", Snackbar.LENGTH_LONG).show();
-                } else if (players.size() < adapter.getSelections().size() + players.size() / 3) {
+                } else if (!assignRoles(players.size())) {
                     Snackbar.make(parent, "You have insufficient players.", Snackbar.LENGTH_LONG).show();
                 } else {
                     mConnectionsClient.stopAdvertising();
-                    assignRoles(players.size());
                     startGame.setEnabled(false);
                     for (int i = 0; i < players.size(); i++) {
-                        String logText = "Sent to: {" + players.get(i).getName() + ", " + players.get(i).getRole() + "}";
+                        String data;
+                        if (getEndpointWithRole("President") != null && !getMafia().contains(players.get(i)))
+                            data = players.get(i).getName() + "," + getEndpointWithRole("President").getName();
+                        else
+                            data = players.get(i).getName();
+                        Response r = new Response(MafiaUtils.RESPONSE_TYPE_ROLE, data);
+                        String logText = "Sent to: {" + players.get(i).getName() + ", " + data + "}";
                         MafiaUtils.addToLogFile(logText, gameName + ".txt");
-                        Response r = new Response(MafiaUtils.RESPONSE_TYPE_ROLE, players.get(i).getRole());
                         sendDataToPlayer(players.get(i).getId(), r);
                     }
                     isNight = false;
@@ -346,7 +350,7 @@ public class ModActivity extends AppCompatActivity {
                             onBackPressed();
                         }
                     }
-                } else if (player.getRole().equals("Mafia") || player.getRole().equals("Godfather")) {
+                } else if (getMafia().contains(player)) {
                     sleeping++;
                     if (sleeping == getMafia().size()) {
                         sleeping = 0;
@@ -363,7 +367,7 @@ public class ModActivity extends AppCompatActivity {
                     skipped++;
                     if (voted == players.size())
                         calculateLynch();
-                } else if (player.getRole().equals("Mafia") || player.getRole().equals("Godfather")) {
+                } else if (getMafia().contains(player)) {
                     voted++;
                     skipped++;
                     if (voted == getMafia().size())
@@ -378,7 +382,7 @@ public class ModActivity extends AppCompatActivity {
     }
 
     private int isGameOver() {
-        if (getMafia().size() >= players.size() - getMafia().size())
+        if ((getMafia().size() >= players.size() - getMafia().size()) || (gameRoles.contains("President") && (getEndpointWithRole("President") == null)))
             return 0;
         else if (getMafia().size() == 0)
             return 1;
@@ -483,20 +487,34 @@ public class ModActivity extends AppCompatActivity {
                 nightChoices.remove("Silencer");
     }
 
-    private void assignRoles(int n) {
+    private boolean assignRoles(int n) {
         ArrayList<String> roles = new ArrayList<>();
-        for (int i = 0; i < adapter.getSelections().size(); i++) {
-            roles.add(MafiaUtils.CHARACTER_TYPES.get(adapter.getSelections().get(i)));
+        ArrayList<Integer> selections = adapter.getSelections();
+        Collections.sort(selections);
+        gameRoles = new ArrayList<>();
+        for (int i = 0; i < selections.size(); i++) {
+            roles.add(MafiaUtils.CHARACTER_TYPES.get(selections.get(i)));
         }
-        Collections.sort(roles, Collections.<String>reverseOrder());
         gameRoles.addAll(roles);
         roles.add("Godfather");
-        roles.addAll(Collections.nCopies((n / 3) - 1, "Mafia"));
+        if (roles.contains("Silencer")) {
+            if ((n / 3) - 2 < 0)
+                return false;
+            roles.addAll(Collections.nCopies((n / 3) - 2, "Mafia"));
+        }
+        else {
+            if ((n / 3) - 1 < 0)
+                return false;
+            roles.addAll(Collections.nCopies((n / 3) - 1, "Mafia"));
+        }
+        if (n - roles.size() < 0)
+            return false;
         roles.addAll(Collections.nCopies(n - roles.size(), "Villager"));
         Collections.shuffle(roles);
         Collections.shuffle(players);
         for (int i = 0; i < players.size(); i++)
             players.get(i).setRole(roles.get(i));
+        return true;
     }
 
     private Endpoint getEndpointWithId(String eid) {
@@ -532,7 +550,7 @@ public class ModActivity extends AppCompatActivity {
     private ArrayList<Endpoint> getMafia() {
         ArrayList<Endpoint> list = new ArrayList<>();
         for (Endpoint e : players)
-            if (e.getRole().equals("Mafia") || e.getRole().equals("Godfather"))
+            if (e.getRole().equals("Mafia") || e.getRole().equals("Godfather") || e.getRole().equals("Silencer"))
                 list.add(e);
         return list;
     }

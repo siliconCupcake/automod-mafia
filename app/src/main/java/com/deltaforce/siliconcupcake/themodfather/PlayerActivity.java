@@ -207,8 +207,14 @@ public class PlayerActivity extends AppCompatActivity {
             }
             switch (response.getType()) {
                 case MafiaUtils.RESPONSE_TYPE_ROLE:
-                    myRole = (String) response.getData();
-                    showAlertDialog("You are " + myRole, new View.OnClickListener() {
+                    String[] rParts = ((String) response.getData()).split(",");
+                    myRole = rParts[0];
+                    String displayText;
+                    if (rParts.length == 2)
+                        displayText = "You are " + myRole + ".\n" + rParts[1] + " is the President.";
+                    else
+                        displayText = "You are " + myRole;
+                    showAlertDialog(displayText, new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
                             alertDialog.dismiss();

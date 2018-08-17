@@ -20,7 +20,7 @@ public class MafiaUtils {
 
     public static final String SERVICE_ID = "com.deltaforce.siliconcupcake.themodfather";
 
-    public static final ArrayList<String> CHARACTER_TYPES = new ArrayList<>(Arrays.asList("Slut", "Doctor", "Cop", "Silencer"));
+    public static final ArrayList<String> CHARACTER_TYPES = new ArrayList<>(Arrays.asList("Slut", "Doctor", "Cop", "Silencer", "President"));
     public static final String[] WINNER = {"Mafia", "Villagers"};
 
     public static final String WAKE_UP_MORNING = "Village wakes up to the death of ";
