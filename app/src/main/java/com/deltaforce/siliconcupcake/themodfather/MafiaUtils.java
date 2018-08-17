@@ -2,7 +2,6 @@ package com.deltaforce.siliconcupcake.themodfather;
 
 import android.content.Context;
 import android.graphics.Typeface;
-import android.os.Build;
 import android.os.Environment;
 import android.util.Log;
 
@@ -16,8 +15,6 @@ import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 public class MafiaUtils {
 

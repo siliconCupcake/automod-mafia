@@ -72,6 +72,7 @@ public class ModActivity extends AppCompatActivity {
     HashMap<String, Endpoint> nightChoices = new HashMap<>();
     ConnectionsClient mConnectionsClient;
     ArrayList<Endpoint> players = new ArrayList<>();
+    Endpoint prevSlut;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -139,7 +140,7 @@ public class ModActivity extends AppCompatActivity {
                                 Response r = new Response(MafiaUtils.RESPONSE_TYPE_OVER, MafiaUtils.WINNER[isOver]);
                                 for (Endpoint p : players) {
                                     sendDataToPlayer(p.getId(), r);
-                                    MafiaUtils.addToLogFile("Send to: {" + p.getName() + ", " + r.getData() + " win.", gameName + ".txt");
+                                    MafiaUtils.addToLogFile("Send to: {" + p.getName() + ", " + r.getData() + " win.}", gameName + ".txt");
                                 }
                                 playersJoined = false;
                                 onBackPressed();
@@ -156,7 +157,7 @@ public class ModActivity extends AppCompatActivity {
                             voted = 0;
                             checkMafiaVotes();
                         }
-                    } else {
+                    } else if (player.getRole().equals(gameRoles.get(nightStage-1))){
                         nightVoting();
                     }
                 }
@@ -208,23 +209,30 @@ public class ModActivity extends AppCompatActivity {
                         if (nightChoices.containsKey("Slut") && nightChoices.get("Slut").equals(getEndpointWithId(s))) {
                             Response r = new Response(MafiaUtils.RESPONSE_TYPE_COP, false);
                             sendDataToPlayer(s, r);
-                            MafiaUtils.addToLogFile("Send to: {" + cop.getName() + ", COP: Villager", gameName + ".txt");
+                            MafiaUtils.addToLogFile("Send to: {" + cop.getName() + ", COP: Villager}", gameName + ".txt");
                         } else if (votee.getRole().equals("Mafia") || (votee.getRole().equals("Godfather") && nightChoices.containsKey("Slut") && nightChoices.get("Slut").getRole().equals("Godfather"))) {
                             Response r = new Response(MafiaUtils.RESPONSE_TYPE_COP, true);
                             sendDataToPlayer(s, r);
-                            MafiaUtils.addToLogFile("Send to: {" + cop.getName() + ", COP: Mafia", gameName + ".txt");
+                            MafiaUtils.addToLogFile("Send to: {" + cop.getName() + ", COP: Mafia}", gameName + ".txt");
                         } else {
                             Response r = new Response(MafiaUtils.RESPONSE_TYPE_COP, false);
                             sendDataToPlayer(s, r);
-                            MafiaUtils.addToLogFile("Send to: {" + cop.getName() + ", COP: Villager", gameName + ".txt");
+                            MafiaUtils.addToLogFile("Send to: {" + cop.getName() + ", COP: Villager}", gameName + ".txt");
                         }
                     } else {
                         votee = getEndpointWithName(request.getData());
                         MafiaUtils.addToLogFile("Receive from: {" + getEndpointWithId(s).getName() + ", VOTE: " + votee.getName() + "}", gameName + ".txt");
-                        nightChoices.put(getEndpointWithId(s).getRole(), votee);
-                        Response r = new Response(MafiaUtils.RESPONSE_TYPE_ACK, "OK");
+                        Response r;
+                        if (getEndpointWithId(s).getRole().equals("Slut") && votee.equals(prevSlut)) {
+                            r = new Response(MafiaUtils.RESPONSE_TYPE_ACK, "You can't sleep with the same guy twice in a row.");
+                            MafiaUtils.addToLogFile("Send to: {" + getEndpointWithId(s).getName() + ", ACK: You can't sleep with the same guy twice in a row.}", gameName + ".txt");
+                        } else {
+                            r = new Response(MafiaUtils.RESPONSE_TYPE_ACK, "OK");
+                            prevSlut = votee;
+                            nightChoices.put(getEndpointWithId(s).getRole(), votee);
+                            MafiaUtils.addToLogFile(getEndpointWithId(s).getRole() + " chose " + votee.getName() + "}", gameName + ".txt");
+                        }
                         sendDataToPlayer(s, r);
-                        MafiaUtils.addToLogFile(getEndpointWithId(s).getRole() + " chose " + votee.getName(), gameName + ".txt");
                     }
                     break;
             }
@@ -245,7 +253,7 @@ public class ModActivity extends AppCompatActivity {
             r = new Response(MafiaUtils.RESPONSE_TYPE_ACK, "OK");
             logText = "Mafia chose nobody";
         } else if (players.get(0).getVotes() == getMafia().size()) {
-            logText = "Mafia chose " + players.get(0).getName();
+            logText = "Mafia chose " + players.get(0).getName() + "}";
             r = new Response(MafiaUtils.RESPONSE_TYPE_ACK, "OK");
             nightChoices.put("Mafia", players.get(0));
         } else {
@@ -332,7 +340,7 @@ public class ModActivity extends AppCompatActivity {
                             Response r = new Response(MafiaUtils.RESPONSE_TYPE_OVER, MafiaUtils.WINNER[isOver]);
                             for (Endpoint p : players) {
                                 sendDataToPlayer(p.getId(), r);
-                                MafiaUtils.addToLogFile("Send to: {" + p.getName() + ", " + r.getData() + " win.", gameName + ".txt");
+                                MafiaUtils.addToLogFile("Send to: {" + p.getName() + ", " + r.getData() + " win.}", gameName + ".txt");
                             }
                             playersJoined = false;
                             onBackPressed();
@@ -363,7 +371,7 @@ public class ModActivity extends AppCompatActivity {
                 } else {
                     Response r = new Response(MafiaUtils.RESPONSE_TYPE_ACK, "OK");
                     sendDataToPlayer(player.getId(), r);
-                    MafiaUtils.addToLogFile(player.getRole() + "chose to skip", gameName + ".txt");
+                    MafiaUtils.addToLogFile(player.getRole() + " chose to skip.", gameName + ".txt");
                 }
                 break;
         }
@@ -386,13 +394,13 @@ public class ModActivity extends AppCompatActivity {
                 r = new Response(MafiaUtils.RESPONSE_TYPE_WAKE, players);
                 for (Endpoint m : mafia) {
                     sendDataToPlayer(m.getId(), r);
-                    MafiaUtils.addToLogFile("Send to: {" + m.getName() + ", WAKE: " + r.getData(), gameName + ".txt");
+                    MafiaUtils.addToLogFile("Send to: {" + m.getName() + ", WAKE: " + r.getData() + "}", gameName + ".txt");
                 }
                 nightStage++;
             } else {
                 Endpoint p = getEndpointWithRole(gameRoles.get(nightStage));
                 r = new Response(MafiaUtils.RESPONSE_TYPE_WAKE, players);
-                MafiaUtils.addToLogFile("Send to: {" + p.getName() + ", WAKE: " + r.getData(), gameName + ".txt");
+                MafiaUtils.addToLogFile("Send to: {" + p.getName() + ", WAKE: " + r.getData() + "}", gameName + ".txt");
                 sendDataToPlayer(p.getId(), r);
                 nightStage++;
             }
@@ -402,11 +410,15 @@ public class ModActivity extends AppCompatActivity {
     }
 
     private void calculateNightKill() {
-        if ((nightChoices.containsKey("Slut") && (nightChoices.get("Slut").getRole().equals("Mafia") || nightChoices.get("Slut").getRole().equals("Godfather"))) ||
-                (nightChoices.containsKey("Mafia") && nightChoices.containsKey("Doctor") && nightChoices.containsKey("Slut") &&
-                        nightChoices.get("Mafia").equals(nightChoices.get("Doctor")) && !nightChoices.get("Slut").getRole().equals("Doctor")))
+        if (nightChoices.containsKey("Slut") && (nightChoices.get("Slut").getRole().equals("Mafia") || nightChoices.get("Slut").getRole().equals("Godfather"))) {
             players.add(0, new Endpoint("DEATH", "nobody"));
-        else if (nightChoices.containsKey("Mafia")) {
+        } else if (nightChoices.containsKey("Mafia") && nightChoices.containsKey("Doctor") && nightChoices.get("Mafia").equals(nightChoices.get("Doctor"))) {
+            if (nightChoices.containsKey("Slut") && nightChoices.get("Slut").getRole().equals("Doctor")) {
+                int killed = players.indexOf(nightChoices.get("Mafia"));
+                Collections.swap(players, 0, killed);
+            } else
+                players.add(0, new Endpoint("DEATH", "nobody"));
+        } else if (nightChoices.containsKey("Mafia")) {
             int killed = players.indexOf(nightChoices.get("Mafia"));
             Collections.swap(players, 0, killed);
         } else
@@ -445,7 +457,7 @@ public class ModActivity extends AppCompatActivity {
             Response r = new Response(MafiaUtils.RESPONSE_TYPE_DEATH, players);
             for (int i = 0; i < players.size(); i++) {
                 sendDataToPlayer(players.get(i).getId(), r);
-                MafiaUtils.addToLogFile("Send to: {" + players.get(i).getName() + ", DEATH: " + r.getData(), gameName + ".txt");
+                MafiaUtils.addToLogFile("Send to: {" + players.get(i).getName() + ", DEATH: " + r.getData() + "}", gameName + ".txt");
             }
             players.remove(getEndpointWithName("nobody"));
         } else {
@@ -453,7 +465,7 @@ public class ModActivity extends AppCompatActivity {
             Response r = new Response(MafiaUtils.RESPONSE_TYPE_OVER, MafiaUtils.WINNER[isOver]);
             for (Endpoint p : players) {
                 sendDataToPlayer(p.getId(), r);
-                MafiaUtils.addToLogFile("Send to: {" + p.getName() + ", " + r.getData() + " win.", gameName + ".txt");
+                MafiaUtils.addToLogFile("Send to: {" + p.getName() + ", " + r.getData() + " win.}", gameName + ".txt");
             }
             playersJoined = false;
             onBackPressed();
