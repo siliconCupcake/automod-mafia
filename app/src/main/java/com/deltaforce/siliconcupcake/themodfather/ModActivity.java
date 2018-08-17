@@ -449,15 +449,20 @@ public class ModActivity extends AppCompatActivity {
     private void wakeUpMorning() {
         isNight = false;
         calculateNightKill();
+        calculateSilence();
         Endpoint toKill = players.get(0);
         players.remove(0);
         int isOver = isGameOver();
         if (isOver == 2) {
             players.add(0, toKill);
             Response r = new Response(MafiaUtils.RESPONSE_TYPE_DEATH, players);
-            for (int i = 0; i < players.size(); i++) {
-                sendDataToPlayer(players.get(i).getId(), r);
-                MafiaUtils.addToLogFile("Send to: {" + players.get(i).getName() + ", DEATH: " + r.getData() + "}", gameName + ".txt");
+            for (Endpoint p : players) {
+                sendDataToPlayer(p.getId(), r);
+                MafiaUtils.addToLogFile("Send to: {" + p.getName() + ", DEATH: " + r.getData() + "}", gameName + ".txt");
+                if (nightChoices.containsKey("Silencer")) {
+                    sendDataToPlayer(p.getId(), new Response(MafiaUtils.RESPONSE_TYPE_SILENCE, nightChoices.get("Silencer")));
+                    MafiaUtils.addToLogFile("Send to: {" + p.getName() + ", Silence: " + nightChoices.get("Silencer") + "}", gameName + ".txt");
+                }
             }
             players.remove(getEndpointWithName("nobody"));
         } else {
@@ -470,6 +475,12 @@ public class ModActivity extends AppCompatActivity {
             playersJoined = false;
             onBackPressed();
         }
+    }
+
+    private void calculateSilence() {
+        if (nightChoices.containsKey("Silencer"))
+            if (nightChoices.containsKey("Slut") && nightChoices.get("Slut").getRole().equals("Silencer"))
+                nightChoices.remove("Silencer");
     }
 
     private void assignRoles(int n) {

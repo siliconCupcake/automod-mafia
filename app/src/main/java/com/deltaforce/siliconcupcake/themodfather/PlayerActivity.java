@@ -286,6 +286,19 @@ public class PlayerActivity extends AppCompatActivity {
                     }
                     break;
 
+                case MafiaUtils.RESPONSE_TYPE_SILENCE:
+                    Endpoint silent = (Endpoint) response.getData();
+                    String[] parts = deathText.getText().toString().split(" ");
+                    if (!playerName.equals(parts[parts.length - 1])){
+                        showAlertDialog(silent.getName() + " is silenced for the day", new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                alertDialog.dismiss();
+                            }
+                        });
+                    }
+                    break;
+
                 case MafiaUtils.RESPONSE_TYPE_OVER:
                     String winner = (String) response.getData();
                     showAlertDialog("The " + winner + " win.", new View.OnClickListener() {
@@ -426,6 +439,11 @@ public class PlayerActivity extends AppCompatActivity {
                 instruction = "Who do you want to inspect?";
                 alive.remove(getEndpointWithName(playerName));
                 skipButton.setEnabled(false);
+                break;
+
+            case "Silencer":
+                instruction = "Who do you want to silence?";
+                alive.remove(getEndpointWithName(playerName));
                 break;
 
             case "Vigilante":

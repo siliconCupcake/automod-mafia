@@ -20,7 +20,7 @@ public class MafiaUtils {
 
     public static final String SERVICE_ID = "com.deltaforce.siliconcupcake.themodfather";
 
-    public static final ArrayList<String> CHARACTER_TYPES = new ArrayList<>(Arrays.asList("Slut", "Doctor", "Cop"));
+    public static final ArrayList<String> CHARACTER_TYPES = new ArrayList<>(Arrays.asList("Slut", "Doctor", "Cop", "Silencer"));
     public static final String[] WINNER = {"Mafia", "Villagers"};
 
     public static final String WAKE_UP_MORNING = "Village wakes up to the death of ";
@@ -32,6 +32,7 @@ public class MafiaUtils {
     public static final int RESPONSE_TYPE_OVER = 76;
     public static final int RESPONSE_TYPE_COP = 72;
     public static final int RESPONSE_TYPE_LYNCH = 77;
+    public static final int RESPONSE_TYPE_SILENCE = 70;
 
     public static final int REQUEST_TYPE_CONTINUE = 81;
     public static final int REQUEST_TYPE_VOTE = 82;
