@@ -2,6 +2,7 @@ package com.deltaforce.siliconcupcake.themodfather;
 
 import android.animation.Animator;
 import android.content.Context;
+import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TextInputLayout;
@@ -33,6 +34,7 @@ import com.google.android.gms.nearby.connection.PayloadCallback;
 import com.google.android.gms.nearby.connection.PayloadTransferUpdate;
 import com.google.android.gms.nearby.connection.Strategy;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -84,6 +86,9 @@ public class ModActivity extends AppCompatActivity {
         ButterKnife.bind(this);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
+        gameName = getSharedPreferences("defaults", MODE_PRIVATE).getString("gName", "");
+        nameField.append(gameName);
+
         characterList.setVerticalScrollBarEnabled(false);
         adapter = new GridViewAdapter(this, MafiaUtils.CHARACTER_TYPES, false);
         characterList.setAdapter(adapter);
@@ -132,7 +137,7 @@ public class ModActivity extends AppCompatActivity {
                             sleeping = 0;
                             isNight = true;
                             int isOver = isGameOver();
-                            if (isOver == 2) {
+                            if (isOver == 3) {
                                 nightStage = -1;
                                 nightChoices.clear();
                                 nightVoting();
@@ -285,6 +290,7 @@ public class ModActivity extends AppCompatActivity {
             public void onClick(View view) {
                 if (!playersJoined) {
                     gameName = nameField.getText().toString().trim();
+                    getSharedPreferences("defaults", MODE_PRIVATE).edit().putString("gName", gameName).apply();
                     if (TextUtils.isEmpty(gameName)) {
                         nameLayout.setError("Name cannot be empty");
                         if (nameField.requestFocus())
@@ -307,6 +313,9 @@ public class ModActivity extends AppCompatActivity {
                     Snackbar.make(parent, "You have insufficient players.", Snackbar.LENGTH_LONG).show();
                 } else {
                     mConnectionsClient.stopAdvertising();
+                    File logFile = new File(Environment.getExternalStorageDirectory().getPath() + "/TheModfather/" + gameName + ".txt");
+                    if (logFile.exists())
+                        logFile.delete();
                     startGame.setEnabled(false);
                     for (int i = 0; i < players.size(); i++) {
                         String data;
@@ -336,7 +345,7 @@ public class ModActivity extends AppCompatActivity {
                         sleeping = 0;
                         isNight = true;
                         int isOver = isGameOver();
-                        if (isOver == 2) {
+                        if (isOver == 3) {
                             nightStage = -1;
                             nightChoices.clear();
                             nightVoting();
@@ -382,12 +391,14 @@ public class ModActivity extends AppCompatActivity {
     }
 
     private int isGameOver() {
-        if ((getMafia().size() >= players.size() - getMafia().size()) || (gameRoles.contains("President") && (getEndpointWithRole("President") == null)))
+        if (getMafia().size() >= players.size() - getMafia().size())
             return 0;
         else if (getMafia().size() == 0)
             return 1;
-        else
+        else if (gameRoles.contains("President") && (getEndpointWithRole("President") == null))
             return 2;
+        else
+            return 3;
     }
 
     private void nightVoting() {
@@ -457,7 +468,7 @@ public class ModActivity extends AppCompatActivity {
         Endpoint toKill = players.get(0);
         players.remove(0);
         int isOver = isGameOver();
-        if (isOver == 2) {
+        if (isOver == 3) {
             players.add(0, toKill);
             Response r = new Response(MafiaUtils.RESPONSE_TYPE_DEATH, players);
             for (Endpoint p : players) {

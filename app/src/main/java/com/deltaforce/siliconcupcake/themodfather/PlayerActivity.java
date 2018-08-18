@@ -116,6 +116,9 @@ public class PlayerActivity extends AppCompatActivity {
         voteLayout.setVisibility(View.GONE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
+        playerName = getSharedPreferences("defaults", MODE_PRIVATE).getString("pName", "");
+        nameField.append(playerName);
+
         availableGameList.setVerticalScrollBarEnabled(false);
         voteList.setVerticalScrollBarEnabled(false);
         gamesAdapter = new GridViewAdapter(this, endpoints, true);
@@ -307,7 +310,20 @@ public class PlayerActivity extends AppCompatActivity {
 
                 case MafiaUtils.RESPONSE_TYPE_OVER:
                     String winner = (String) response.getData();
-                    showAlertDialog("The " + winner + " win.", new View.OnClickListener() {
+                    switch (winner) {
+                        case "President":
+                            winner = "The President was killed. The Mafia win.";
+                            break;
+
+                        case "Villagers":
+                            winner = "The Mafia is dead. The Villagers win.";
+                            break;
+
+                        case "Mafia":
+                            winner = "The Villagers and Mafia are equal in number. The Mafia win.";
+                            break;
+                    }
+                    showAlertDialog( winner, new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
                             alertDialog.dismiss();
@@ -344,6 +360,7 @@ public class PlayerActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 playerName = nameField.getText().toString().trim();
+                getSharedPreferences("defaults", MODE_PRIVATE).edit().putString("pName", playerName).apply();
                 if (TextUtils.isEmpty(playerName)) {
                     playerNameLayout.setError("Name cannot be empty");
                     if (nameField.requestFocus())

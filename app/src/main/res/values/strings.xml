@@ -9,9 +9,9 @@
     <string name="connection_count">Connections\n%d</string>
     <string name="game_name_hint">Give your game a name</string>
     <string name="player_name_hint">What should we call you?</string>
-    <string name="config_instructions">Make your pick:</string>
+    <string name="config_instructions">Make your pick:\n(Long press a character to know more)</string>
     <string name="join_game_instruction">Pick a game to join:</string>
-    <string name="config_hint">Note: Villagers, Mafia and Godfather are picked by default</string>
+    <string name="config_hint">Note: Villagers, Mafia and Godfather are picked by default.</string>
     <string name="join_game_note">Note: Pick only one of the above</string>
     <string name="submit_text">Submit</string>
     <string name="sleep_text">Sleep</string>
@@ -21,10 +21,10 @@
     <string name="main_instructions">1. Connect the mod and all players to a common wifi for better connectivity.
         \n\n2. DO NOT turn off the bluetooth, it is required to connect players to the mod.
         \n\n3. If it takes too long to discover or connect to hosts, restart the player app.
-        \n\n4. Disconnecting in the middle of the game treats you to be dead.
-        \n\n5. Location permissions are required to set up the connection and storage permissions for logging.</string>
+        \n\n4. Location permissions are required to set up the connection and storage permissions for logging.
+        \n\n5. Disconnecting in the middle of the game treats you to be dead.</string>
     <string name="go_to_sleep">Go to sleep</string>
-    <string name="version">v1.0</string>
+    <string name="version">v1.1</string>
     <string name="tagline">Made with \u2665 for you.</string>
 </resources>
 

@@ -55,6 +55,8 @@ public class MainActivity extends AppCompatActivity {
                 final Dialog alertDialog = new Dialog(MainActivity.this);
                 alertDialog.setContentView(R.layout.dialog_alert);
                 alertDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+                alertDialog.findViewById(R.id.dialog_title).setVisibility(View.VISIBLE);
+                ((TextView) alertDialog.findViewById(R.id.dialog_title)).setText("General Instructions");
                 ((TextView) alertDialog.findViewById(R.id.dialog_text)).setText(getResources().getText(R.string.main_instructions));
                 alertDialog.findViewById(R.id.dialog_button).setOnClickListener(new View.OnClickListener() {
                     @Override
