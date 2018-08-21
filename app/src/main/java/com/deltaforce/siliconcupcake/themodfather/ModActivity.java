@@ -68,6 +68,7 @@ public class ModActivity extends AppCompatActivity {
     int sleeping = 0, voted = 0, skipped = 0, nightStage = -1;
     boolean playersJoined = false;
     boolean isNight = true;
+    boolean hunterVote = false;
     String gameName;
     ArrayList<String> gameRoles = new ArrayList<>();
     GridViewAdapter adapter;
@@ -133,7 +134,13 @@ public class ModActivity extends AppCompatActivity {
                     gameRoles.remove(player.getRole());
                     connectionCount.setText("Connections\n" + String.valueOf(players.size()));
                     if (!isNight) {
-                        if (sleeping == players.size()) {
+                        if(hunterVote) {
+                            MafiaUtils.addToLogFile(player.getRole() + " chose to skip.", gameName + ".txt");
+                            Response r = new Response(MafiaUtils.RESPONSE_TYPE_ACK, "OK");
+                            for (Endpoint p: players)
+                                sendDataToPlayer(p.getId(), r);
+                            sendDataToPlayer(player.getId(), new Response(MafiaUtils.RESPONSE_TYPE_ACK, "KILL_HUNTER"));
+                        } else if (sleeping == players.size()) {
                             sleeping = 0;
                             isNight = true;
                             int isOver = isGameOver();
@@ -190,13 +197,22 @@ public class ModActivity extends AppCompatActivity {
                 case MafiaUtils.REQUEST_TYPE_VOTE:
                     Endpoint votee;
                     if (!isNight) {
-                        votee = getEndpointWithName(request.getData());
-                        MafiaUtils.addToLogFile("Receive from: {" + getEndpointWithId(s).getName() + ", VOTE: " + votee.getName() + "}", gameName + ".txt");
-                        votee.setVotes(votee.getVotes() + 1);
-                        voted++;
-                        if (voted == players.size()) {
-                            voted = 0;
-                            calculateLynch();
+                        if(hunterVote){
+                            votee = getEndpointWithName(request.getData());
+                            MafiaUtils.addToLogFile("Receive from: {" + getEndpointWithId(s).getName() + ", HUNTER VOTE: " + votee.getName() + "}", gameName + ".txt");
+                            Response r = new Response(MafiaUtils.RESPONSE_TYPE_LYNCH, votee.getName());
+                            for (Endpoint p: players)
+                                sendDataToPlayer(p.getId(), r);
+                            sendDataToPlayer(s, new Response(MafiaUtils.RESPONSE_TYPE_ACK, "KILL_HUNTER"));
+                        } else {
+                            votee = getEndpointWithName(request.getData());
+                            MafiaUtils.addToLogFile("Receive from: {" + getEndpointWithId(s).getName() + ", VOTE: " + votee.getName() + "}", gameName + ".txt");
+                            votee.setVotes(votee.getVotes() + 1);
+                            voted++;
+                            if (voted == players.size()) {
+                                voted = 0;
+                                calculateLynch();
+                            }
                         }
                     } else if (getMafia().contains(getEndpointWithId(s))) {
                         votee = getEndpointWithName(request.getData());
@@ -372,10 +388,18 @@ public class ModActivity extends AppCompatActivity {
 
             case MafiaUtils.REQUEST_DATA_SKIP:
                 if (!isNight) {
-                    voted++;
-                    skipped++;
-                    if (voted == players.size())
-                        calculateLynch();
+                    if(hunterVote) {
+                        MafiaUtils.addToLogFile(player.getRole() + " chose to skip.", gameName + ".txt");
+                        Response r = new Response(MafiaUtils.RESPONSE_TYPE_ACK, "OK");
+                        for (Endpoint p: players)
+                            sendDataToPlayer(p.getId(), r);
+                        sendDataToPlayer(player.getId(), new Response(MafiaUtils.RESPONSE_TYPE_ACK, "KILL_HUNTER"));
+                    } else {
+                        voted++;
+                        skipped++;
+                        if (voted == players.size())
+                            calculateLynch();
+                    }
                 } else if (getMafia().contains(player)) {
                     voted++;
                     skipped++;
@@ -450,6 +474,10 @@ public class ModActivity extends AppCompatActivity {
         } else if (players.get(0).getVotes() == players.get(1).getVotes()) {
             r = new Response(MafiaUtils.RESPONSE_TYPE_ACK, "There is a tie, please vote again");
             logText = "Send to: {%s, ACK: Vote Again}";
+        } else if (players.get(0).getRole().equals("Hunter")) {
+            r = new Response(MafiaUtils.RESPONSE_TYPE_HUNTER, players.get(0).getName());
+            logText = "Send to: {%s, HUNTER: " + players.get(0).getName() + "}";
+            hunterVote = true;
         } else {
             r = new Response(MafiaUtils.RESPONSE_TYPE_LYNCH, players.get(0).getName());
             logText = "Send to: {%s, LYNCH: " + players.get(0).getName() + "}";
@@ -476,10 +504,10 @@ public class ModActivity extends AppCompatActivity {
                 MafiaUtils.addToLogFile("Send to: {" + p.getName() + ", DEATH: " + r.getData() + "}", gameName + ".txt");
                 if (nightChoices.containsKey("Silencer")) {
                     sendDataToPlayer(p.getId(), new Response(MafiaUtils.RESPONSE_TYPE_SILENCE, nightChoices.get("Silencer")));
-                    MafiaUtils.addToLogFile("Send to: {" + p.getName() + ", Silence: " + nightChoices.get("Silencer") + "}", gameName + ".txt");
+                    MafiaUtils.addToLogFile("Send to: {" + p.getName() + ", SILENCE: " + nightChoices.get("Silencer") + "}", gameName + ".txt");
                 }
             }
-            players.remove(getEndpointWithName("nobody"));
+            players.remove(0);
         } else {
             players.add(0, toKill);
             Response r = new Response(MafiaUtils.RESPONSE_TYPE_OVER, MafiaUtils.WINNER[isOver]);

@@ -243,6 +243,8 @@ public class PlayerActivity extends AppCompatActivity {
                     if (((String) response.getData()).equals("OK")) {
                         animateViews(voteLayout, sleepLayout);
                         sleepButton.setEnabled(true);
+                    } else if (((String) response.getData()).equals("KILL_HUNTER")) {
+                            quitGame();
                     } else {
                         Snackbar.make(parent, (String) response.getData(), Snackbar.LENGTH_LONG).show();
                         voteButton.setEnabled(true);
@@ -250,7 +252,7 @@ public class PlayerActivity extends AppCompatActivity {
                     break;
 
                 case MafiaUtils.RESPONSE_TYPE_LYNCH:
-                    if (response.getData().equals(playerName))
+                    if (response.getData().equals(playerName)) {
                         showAlertDialog("You were killed", new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
@@ -258,7 +260,7 @@ public class PlayerActivity extends AppCompatActivity {
                                 quitGame();
                             }
                         });
-                    else {
+                    } else {
                         showAlertDialog(response.getData() + " was killed", new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
@@ -266,6 +268,27 @@ public class PlayerActivity extends AppCompatActivity {
                                 animateViews(voteLayout, sleepLayout);
                                 sleepButton.setEnabled(true);
                                 ((TextView) getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title)).setText("Night");
+                            }
+                        });
+                    }
+                    break;
+
+                case MafiaUtils.RESPONSE_TYPE_HUNTER:
+                    if (response.getData().equals(playerName))
+                        showAlertDialog("You were killed. You can now choose to take a person with you.", new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                alertDialog.dismiss();
+                                voteButton.setEnabled(true);
+                                setVotingInstruction();
+                            }
+                        });
+                    else {
+                        showAlertDialog(response.getData() + " was killed", new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                alertDialog.dismiss();
+                                showLoadingDialog("Please wait");
                             }
                         });
                     }
@@ -398,9 +421,9 @@ public class PlayerActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 if (voteAdapter.getSelections().size() > 1)
-                    Snackbar.make(parent, "Pick only one player.", Snackbar.LENGTH_LONG).show();
+                    Snackbar.make(parent, "Pick only one option.", Snackbar.LENGTH_LONG).show();
                 else if (voteAdapter.getSelections().size() == 0)
-                    Snackbar.make(parent, "Pick a game.", Snackbar.LENGTH_LONG).show();
+                    Snackbar.make(parent, "Pick someone.", Snackbar.LENGTH_LONG).show();
                 else {
                     Request r = new Request(MafiaUtils.REQUEST_TYPE_VOTE, alive.get(voteAdapter.getSelections().get(0)).getName());
                     sendDataToMod(endpoints.get(0).getId(), r);
@@ -450,6 +473,11 @@ public class PlayerActivity extends AppCompatActivity {
             case "Doctor":
                 instruction = "Who do you want to save?";
                 skipButton.setEnabled(false);
+                break;
+
+            case "Hunter":
+                instruction = "Who do you want to kill?";
+                alive.remove(getEndpointWithName(playerName));
                 break;
 
             case "Slut":
