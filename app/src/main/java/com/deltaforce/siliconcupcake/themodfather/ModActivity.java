@@ -59,8 +59,14 @@ public class ModActivity extends AppCompatActivity {
     @BindView(R.id.character_list)
     GridView characterList;
 
+    @BindView(R.id.connection_layout)
+    RelativeLayout connectionLayout;
+
     @BindView(R.id.connection_status)
     TextView connectionCount;
+
+    @BindView(R.id.connection_list)
+    TextView connectionList;
 
     @BindView(R.id.init_game)
     Button startGame;
@@ -115,7 +121,7 @@ public class ModActivity extends AppCompatActivity {
             switch (connectionResolution.getStatus().getStatusCode()) {
                 case ConnectionsStatusCodes.STATUS_OK:
                     Snackbar.make(connectionCount, e.getName() + " connected to game", Snackbar.LENGTH_LONG).show();
-                    connectionCount.setText("Connections\n" + String.valueOf(players.size()));
+                    refreshConnectionsList();
                     break;
 
                 case ConnectionsStatusCodes.STATUS_CONNECTION_REJECTED:
@@ -135,7 +141,7 @@ public class ModActivity extends AppCompatActivity {
             try {
                 if (playersJoined) {
                     gameRoles.remove(player.getRole());
-                    connectionCount.setText("Connections\n" + String.valueOf(players.size()));
+                    refreshConnectionsList();
                     if (!isNight) {
                         if(hunterVote) {
                             MafiaUtils.addToLogFile(player.getRole() + " chose to skip.", gameName + ".txt");
@@ -323,7 +329,7 @@ public class ModActivity extends AppCompatActivity {
                         Snackbar.make(parent, "Pick " + String.valueOf(3 - adapter.getSelections().size()) + " more.", Snackbar.LENGTH_LONG).show();
                         nameLayout.setErrorEnabled(false);
                     } else {
-                        connectionCount.setText("Connections\n" + String.valueOf(players.size()));
+                        refreshConnectionsList();
                         animateTransition();
                         nameLayout.setErrorEnabled(false);
                         playersJoined = true;
@@ -422,6 +428,14 @@ public class ModActivity extends AppCompatActivity {
                 }
                 break;
         }
+    }
+
+    private void refreshConnectionsList(){
+        String conList = "";
+        connectionCount.setText("Connections: " + String.valueOf(players.size()));
+        for (Endpoint p: players)
+            conList = conList + p.getName() + "\n";
+        connectionList.setText(conList);
     }
 
     private int isGameOver() {
@@ -627,8 +641,8 @@ public class ModActivity extends AppCompatActivity {
             @Override
             public void onAnimationEnd(Animator animator) {
                 configLayout.setVisibility(View.GONE);
-                connectionCount.setVisibility(View.VISIBLE);
-                connectionCount.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.zoom_in));
+                connectionLayout.setVisibility(View.VISIBLE);
+                connectionLayout.startAnimation(AnimationUtils.loadAnimation(getApplicationContext(), R.anim.zoom_in));
                 startGame.setText(R.string.start_game);
             }
 

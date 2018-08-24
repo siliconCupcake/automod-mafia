@@ -24,7 +24,7 @@
         \n\n4. Location permissions are required to set up the connection and storage permissions for logging.
         \n\n5. Disconnecting in the middle of the game treats you to be dead.</string>
     <string name="go_to_sleep">Go to sleep</string>
-    <string name="version">v1.1</string>
+    <string name="version">v1.2</string>
     <string name="tagline">Made with \u2665 for you.</string>
 </resources>
 

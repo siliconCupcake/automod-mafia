@@ -66,20 +66,10 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/tag_text"
+        android:layout_margin="8dp"
+        android:layout_alignParentBottom="true"
         android:text="@string/version"
         android:textSize="12sp"
-        android:gravity="center"/>
-
-    <TextView
-        android:id="@+id/tag_text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:textColor="@android:color/black"
-        android:text="@string/tagline"
-        android:layout_margin="8dp"
-        android:textSize="16sp"
         android:gravity="center"/>
 
 </RelativeLayout>

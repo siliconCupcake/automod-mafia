@@ -42,8 +42,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@id/game_name_layout"
-            android:layout_marginStart="32dp"
             android:layout_marginEnd="32dp"
+            android:layout_marginStart="32dp"
             android:text="@string/config_instructions"
             android:textSize="18sp" />
 
@@ -66,26 +66,45 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
-            android:layout_marginStart="32dp"
             android:layout_marginEnd="32dp"
+            android:layout_marginStart="32dp"
             android:text="@string/config_hint"
             android:textSize="18sp" />
 
     </RelativeLayout>
 
-    <TextView
-        android:id="@+id/connection_status"
+    <RelativeLayout
+        android:id="@+id/connection_layout"
         android:layout_width="wrap_content"
         android:layout_height="0dp"
         android:layout_gravity="center"
         android:layout_weight="9"
-        android:gravity="center"
-        android:lineSpacingExtra="8dp"
-        android:maxLines="2"
-        android:text="@string/connection_count"
-        android:textColor="@android:color/black"
-        android:textSize="40sp"
-        android:visibility="gone" />
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/connection_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/connection_list"
+            android:gravity="center"
+            android:maxLines="1"
+            android:text="@string/connection_count"
+            android:textColor="@android:color/black"
+            android:textStyle="bold"
+            android:textSize="36sp" />
+
+        <TextView
+            android:id="@+id/connection_list"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:layout_margin="16dp"
+            android:lineSpacingExtra="8dp"
+            android:gravity="center"
+            android:textColor="@android:color/black"
+            android:textSize="32sp" />
+
+    </RelativeLayout>
 
     <Button
         android:id="@+id/init_game"
