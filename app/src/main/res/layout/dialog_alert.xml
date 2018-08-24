@@ -14,8 +14,7 @@
         android:layout_margin="16dp"
         android:textSize="24sp"
         android:textStyle="bold"
-        android:textColor="@android:color/black"
-        android:visibility="gone"/>
+        android:textColor="@android:color/black"/>
 
     <TextView
         android:id="@+id/dialog_text"
@@ -25,7 +24,6 @@
         android:textDirection="ltr"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
         android:text="@string/main_instructions"
         android:textColor="@android:color/black"
         android:textSize="20sp" />

@@ -69,6 +69,9 @@ public class ModActivity extends AppCompatActivity {
     boolean playersJoined = false;
     boolean isNight = true;
     boolean hunterVote = false;
+    boolean mafiaVoted = false;
+    boolean havePresident = false;
+
     String gameName;
     ArrayList<String> gameRoles = new ArrayList<>();
     GridViewAdapter adapter;
@@ -111,7 +114,7 @@ public class ModActivity extends AppCompatActivity {
             Endpoint e = getEndpointWithId(s);
             switch (connectionResolution.getStatus().getStatusCode()) {
                 case ConnectionsStatusCodes.STATUS_OK:
-                    Snackbar.make(connectionCount, "Connected to " + e.getName(), Snackbar.LENGTH_LONG).show();
+                    Snackbar.make(connectionCount, e.getName() + " connected to game", Snackbar.LENGTH_LONG).show();
                     connectionCount.setText("Connections\n" + String.valueOf(players.size()));
                     break;
 
@@ -139,7 +142,6 @@ public class ModActivity extends AppCompatActivity {
                             Response r = new Response(MafiaUtils.RESPONSE_TYPE_ACK, "OK");
                             for (Endpoint p: players)
                                 sendDataToPlayer(p.getId(), r);
-                            sendDataToPlayer(player.getId(), new Response(MafiaUtils.RESPONSE_TYPE_ACK, "KILL_HUNTER"));
                         } else if (sleeping == players.size()) {
                             sleeping = 0;
                             isNight = true;
@@ -164,6 +166,7 @@ public class ModActivity extends AppCompatActivity {
                     } else if (getMafia().contains(player)) {
                         if (sleeping == getMafia().size()) {
                             sleeping = 0;
+                            mafiaVoted = true;
                             nightVoting();
                         } else if (voted == getMafia().size()) {
                             voted = 0;
@@ -204,6 +207,7 @@ public class ModActivity extends AppCompatActivity {
                             for (Endpoint p: players)
                                 sendDataToPlayer(p.getId(), r);
                             sendDataToPlayer(s, new Response(MafiaUtils.RESPONSE_TYPE_ACK, "KILL_HUNTER"));
+                            hunterVote = false;
                         } else {
                             votee = getEndpointWithName(request.getData());
                             MafiaUtils.addToLogFile("Receive from: {" + getEndpointWithId(s).getName() + ", VOTE: " + votee.getName() + "}", gameName + ".txt");
@@ -214,7 +218,7 @@ public class ModActivity extends AppCompatActivity {
                                 calculateLynch();
                             }
                         }
-                    } else if (getMafia().contains(getEndpointWithId(s))) {
+                    } else if (getMafia().contains(getEndpointWithId(s)) && !mafiaVoted) {
                         votee = getEndpointWithName(request.getData());
                         MafiaUtils.addToLogFile("Receive from: {" + getEndpointWithId(s).getName() + ", VOTE: " + votee.getName() + "}", gameName + ".txt");
                         votee.setVotes(votee.getVotes() + 1);
@@ -247,9 +251,13 @@ public class ModActivity extends AppCompatActivity {
                         if (getEndpointWithId(s).getRole().equals("Slut") && votee.equals(prevSlut)) {
                             r = new Response(MafiaUtils.RESPONSE_TYPE_ACK, "You can't sleep with the same guy twice in a row.");
                             MafiaUtils.addToLogFile("Send to: {" + getEndpointWithId(s).getName() + ", ACK: You can't sleep with the same guy twice in a row.}", gameName + ".txt");
+                        } else if (getEndpointWithId(s).getRole().equals("Slut")) {
+                            prevSlut = votee;
+                            r = new Response(MafiaUtils.RESPONSE_TYPE_ACK, "OK");
+                            nightChoices.put(getEndpointWithId(s).getRole(), votee);
+                            MafiaUtils.addToLogFile(getEndpointWithId(s).getRole() + " chose " + votee.getName() + "}", gameName + ".txt");
                         } else {
                             r = new Response(MafiaUtils.RESPONSE_TYPE_ACK, "OK");
-                            prevSlut = votee;
                             nightChoices.put(getEndpointWithId(s).getRole(), votee);
                             MafiaUtils.addToLogFile(getEndpointWithId(s).getRole() + " chose " + votee.getName() + "}", gameName + ".txt");
                         }
@@ -323,7 +331,7 @@ public class ModActivity extends AppCompatActivity {
                                 MafiaUtils.SERVICE_ID,
                                 connectToPlayers, new AdvertisingOptions(Strategy.P2P_CLUSTER));
                     }
-                } else if (players.size() < 6) {
+                } else if (players.size() < 5) {
                     Snackbar.make(parent, "You need a minimum of 6 players to start.", Snackbar.LENGTH_LONG).show();
                 } else if (!assignRoles(players.size())) {
                     Snackbar.make(parent, "You have insufficient players.", Snackbar.LENGTH_LONG).show();
@@ -336,9 +344,9 @@ public class ModActivity extends AppCompatActivity {
                     for (int i = 0; i < players.size(); i++) {
                         String data;
                         if (getEndpointWithRole("President") != null && !getMafia().contains(players.get(i)))
-                            data = players.get(i).getName() + "," + getEndpointWithRole("President").getName();
+                            data = players.get(i).getRole() + "," + getEndpointWithRole("President").getName();
                         else
-                            data = players.get(i).getName();
+                            data = players.get(i).getRole();
                         Response r = new Response(MafiaUtils.RESPONSE_TYPE_ROLE, data);
                         String logText = "Sent to: {" + players.get(i).getName() + ", " + data + "}";
                         MafiaUtils.addToLogFile(logText, gameName + ".txt");
@@ -375,10 +383,11 @@ public class ModActivity extends AppCompatActivity {
                             onBackPressed();
                         }
                     }
-                } else if (getMafia().contains(player)) {
+                } else if (getMafia().contains(player) && !mafiaVoted) {
                     sleeping++;
                     if (sleeping == getMafia().size()) {
                         sleeping = 0;
+                        mafiaVoted = true;
                         nightVoting();
                     }
                 } else {
@@ -394,6 +403,7 @@ public class ModActivity extends AppCompatActivity {
                         for (Endpoint p: players)
                             sendDataToPlayer(p.getId(), r);
                         sendDataToPlayer(player.getId(), new Response(MafiaUtils.RESPONSE_TYPE_ACK, "KILL_HUNTER"));
+                        hunterVote = false;
                     } else {
                         voted++;
                         skipped++;
@@ -419,7 +429,7 @@ public class ModActivity extends AppCompatActivity {
             return 0;
         else if (getMafia().size() == 0)
             return 1;
-        else if (gameRoles.contains("President") && (getEndpointWithRole("President") == null))
+        else if (havePresident && (getEndpointWithRole("President") == null))
             return 2;
         else
             return 3;
@@ -449,7 +459,7 @@ public class ModActivity extends AppCompatActivity {
     }
 
     private void calculateNightKill() {
-        if (nightChoices.containsKey("Slut") && (nightChoices.get("Slut").getRole().equals("Mafia") || nightChoices.get("Slut").getRole().equals("Godfather"))) {
+        if (nightChoices.containsKey("Slut") && ((nightChoices.get("Slut").getRole().equals("Mafia") || nightChoices.get("Slut").getRole().equals("Godfather")) || nightChoices.get("Slut").getRole().equals("Silencer"))) {
             players.add(0, new Endpoint("DEATH", "nobody"));
         } else if (nightChoices.containsKey("Mafia") && nightChoices.containsKey("Doctor") && nightChoices.get("Mafia").equals(nightChoices.get("Doctor"))) {
             if (nightChoices.containsKey("Slut") && nightChoices.get("Slut").getRole().equals("Doctor")) {
@@ -491,6 +501,7 @@ public class ModActivity extends AppCompatActivity {
 
     private void wakeUpMorning() {
         isNight = false;
+        mafiaVoted = false;
         calculateNightKill();
         calculateSilence();
         Endpoint toKill = players.get(0);
@@ -500,12 +511,12 @@ public class ModActivity extends AppCompatActivity {
             players.add(0, toKill);
             Response r = new Response(MafiaUtils.RESPONSE_TYPE_DEATH, players);
             for (Endpoint p : players) {
-                sendDataToPlayer(p.getId(), r);
-                MafiaUtils.addToLogFile("Send to: {" + p.getName() + ", DEATH: " + r.getData() + "}", gameName + ".txt");
-                if (nightChoices.containsKey("Silencer")) {
+                if (nightChoices.containsKey("Silencer") && !nightChoices.get("Silencer").getName().equals(players.get(0).getName())) {
                     sendDataToPlayer(p.getId(), new Response(MafiaUtils.RESPONSE_TYPE_SILENCE, nightChoices.get("Silencer")));
                     MafiaUtils.addToLogFile("Send to: {" + p.getName() + ", SILENCE: " + nightChoices.get("Silencer") + "}", gameName + ".txt");
                 }
+                sendDataToPlayer(p.getId(), r);
+                MafiaUtils.addToLogFile("Send to: {" + p.getName() + ", DEATH: " + r.getData() + "}", gameName + ".txt");
             }
             players.remove(0);
         } else {
@@ -535,6 +546,11 @@ public class ModActivity extends AppCompatActivity {
             roles.add(MafiaUtils.CHARACTER_TYPES.get(selections.get(i)));
         }
         gameRoles.addAll(roles);
+        if (gameRoles.contains("President")) {
+            havePresident = true;
+            gameRoles.remove("President");
+        }
+        gameRoles.remove("Hunter");
         roles.add("Godfather");
         if (roles.contains("Silencer")) {
             if ((n / 3) - 2 < 0)

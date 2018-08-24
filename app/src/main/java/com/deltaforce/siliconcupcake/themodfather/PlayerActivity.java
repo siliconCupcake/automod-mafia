@@ -101,6 +101,7 @@ public class PlayerActivity extends AppCompatActivity {
     ConnectionsClient mConnectionsClient;
     Dialog loadingDialog, alertDialog;
     String myRole;
+    boolean mafiaVoted = false;
     boolean isConnected = false;
 
     @Override
@@ -182,7 +183,11 @@ public class PlayerActivity extends AppCompatActivity {
 
         @Override
         public void onDisconnected(@NonNull String s) {
-            showAlertDialog("Disconnected from game.", new View.OnClickListener() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(VibrationEffect.createOneShot(3000, VibrationEffect.DEFAULT_AMPLITUDE));
+            else
+                ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(3000);
+            showAlertDialog("Disconnected from game.", "Sorry", new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     alertDialog.dismiss();
@@ -198,10 +203,15 @@ public class PlayerActivity extends AppCompatActivity {
         public void onPayloadReceived(@NonNull String s, @NonNull Payload payload) {
             Response response = new Response();
             loadingDialog.dismiss();
+            try{
+                alertDialog.dismiss();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-                ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE));
+                ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(VibrationEffect.createOneShot(3000, VibrationEffect.DEFAULT_AMPLITUDE));
             else
-                ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(1000);
+                ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(3000);
             try {
                 response = (Response) MafiaUtils.deserialize(payload.asBytes());
             } catch (Exception e) {
@@ -213,16 +223,17 @@ public class PlayerActivity extends AppCompatActivity {
                     String[] rParts = ((String) response.getData()).split(",");
                     myRole = rParts[0];
                     String displayText;
-                    if (rParts.length == 2)
-                        displayText = "You are " + myRole + ".\n" + rParts[1] + " is the President.";
+                    if (rParts.length == 2 && !myRole.equals("President"))
+                        displayText = "You are the " + myRole + ".\n" + rParts[1] + " is the President.";
                     else
-                        displayText = "You are " + myRole;
-                    showAlertDialog(displayText, new View.OnClickListener() {
+                        displayText = "You are the " + myRole;
+                    showAlertDialog(displayText, "The role", new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
                             alertDialog.dismiss();
                         }
                     });
+
                     ((TextView) getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title)).setText("Night");
                     animateViews(gameSetupLayout, sleepLayout);
                     sleepButton.setEnabled(true);
@@ -244,7 +255,7 @@ public class PlayerActivity extends AppCompatActivity {
                         animateViews(voteLayout, sleepLayout);
                         sleepButton.setEnabled(true);
                     } else if (((String) response.getData()).equals("KILL_HUNTER")) {
-                            quitGame();
+                        quitGame();
                     } else {
                         Snackbar.make(parent, (String) response.getData(), Snackbar.LENGTH_LONG).show();
                         voteButton.setEnabled(true);
@@ -253,7 +264,7 @@ public class PlayerActivity extends AppCompatActivity {
 
                 case MafiaUtils.RESPONSE_TYPE_LYNCH:
                     if (response.getData().equals(playerName)) {
-                        showAlertDialog("You were killed", new View.OnClickListener() {
+                        showAlertDialog("You were killed", "Sorry", new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
                                 alertDialog.dismiss();
@@ -261,7 +272,7 @@ public class PlayerActivity extends AppCompatActivity {
                             }
                         });
                     } else {
-                        showAlertDialog(response.getData() + " was killed", new View.OnClickListener() {
+                        showAlertDialog(response.getData() + " was killed", "Execution", new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
                                 alertDialog.dismiss();
@@ -275,16 +286,19 @@ public class PlayerActivity extends AppCompatActivity {
 
                 case MafiaUtils.RESPONSE_TYPE_HUNTER:
                     if (response.getData().equals(playerName))
-                        showAlertDialog("You were killed. You can now choose to take a person with you.", new View.OnClickListener() {
+                        showAlertDialog("You were killed. You can now choose to take a person with you.", "Sorry", new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
-                                alertDialog.dismiss();
+                                alive.remove(getEndpointWithName(playerName));
+                                voteAdapter.notifyDataSetChanged();
                                 voteButton.setEnabled(true);
+                                deathText.setVisibility(View.GONE);
+                                alertDialog.dismiss();
                                 setVotingInstruction();
                             }
                         });
                     else {
-                        showAlertDialog(response.getData() + " was killed", new View.OnClickListener() {
+                        showAlertDialog(response.getData() + " was killed", "Execution", new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
                                 alertDialog.dismiss();
@@ -298,7 +312,7 @@ public class PlayerActivity extends AppCompatActivity {
                     alive = (ArrayList<Endpoint>) response.getData();
                     ((TextView) getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title)).setText("Day");
                     if (alive.get(0).getName().equals(playerName)) {
-                        showAlertDialog("You were killed", new View.OnClickListener() {
+                        showAlertDialog("You were killed", "Sorry", new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
                                 alertDialog.dismiss();
@@ -322,7 +336,7 @@ public class PlayerActivity extends AppCompatActivity {
                     Endpoint silent = (Endpoint) response.getData();
                     String[] parts = deathText.getText().toString().split(" ");
                     if (!playerName.equals(parts[parts.length - 1])){
-                        showAlertDialog(silent.getName() + " is silenced for the day", new View.OnClickListener() {
+                        showAlertDialog(silent.getName() + " is silenced for the day", "Wake Up", new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
                                 alertDialog.dismiss();
@@ -346,7 +360,7 @@ public class PlayerActivity extends AppCompatActivity {
                             winner = "The Villagers and Mafia are equal in number. The Mafia win.";
                             break;
                     }
-                    showAlertDialog( winner, new View.OnClickListener() {
+                    showAlertDialog(winner, "Game Over", new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
                             alertDialog.dismiss();
@@ -365,9 +379,9 @@ public class PlayerActivity extends AppCompatActivity {
                         }
                     };
                     if ((Boolean) response.getData())
-                        showAlertDialog("That was the Mafia", listener);
+                        showAlertDialog("That was the Mafia", "Psst", listener);
                     else
-                        showAlertDialog("That was a Villager", listener);
+                        showAlertDialog("That was a Villager", "Psst", listener);
                     break;
             }
         }
@@ -493,8 +507,14 @@ public class PlayerActivity extends AppCompatActivity {
                 break;
 
             case "Silencer":
-                instruction = "Who do you want to silence?";
-                alive.remove(getEndpointWithName(playerName));
+                if (mafiaVoted) {
+                    instruction = "Who do you want to silence?";
+                    alive.remove(getEndpointWithName(playerName));
+                    mafiaVoted = false;
+                } else {
+                    instruction = "Who do you want to kill?";
+                    mafiaVoted = true;
+                }
                 break;
 
             case "Vigilante":
@@ -554,11 +574,12 @@ public class PlayerActivity extends AppCompatActivity {
         loadingDialog.show();
     }
 
-    private void showAlertDialog(String message, View.OnClickListener listener) {
+    private void showAlertDialog(String message, String title, View.OnClickListener listener) {
         alertDialog = new Dialog(PlayerActivity.this);
         alertDialog.setContentView(R.layout.dialog_alert);
         alertDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         ((TextView) alertDialog.findViewById(R.id.dialog_text)).setText(message);
+        ((TextView) alertDialog.findViewById(R.id.dialog_title)).setText(title);
         alertDialog.findViewById(R.id.dialog_button).setOnClickListener(listener);
         alertDialog.setCanceledOnTouchOutside(false);
         alertDialog.setCancelable(false);

@@ -19,7 +19,7 @@
     <string name="ok_button">OK</string>
     <string name="skip_text">Skip</string>
     <string name="main_instructions">1. Connect the mod and all players to a common wifi for better connectivity.
-        \n\n2. DO NOT turn off the bluetooth, it is required to connect players to the mod.
+            \n\n2. DO NOT turn off the bluetooth, it is required to connect players to the mod.
         \n\n3. If it takes too long to discover or connect to hosts, restart the player app.
         \n\n4. Location permissions are required to set up the connection and storage permissions for logging.
         \n\n5. Disconnecting in the middle of the game treats you to be dead.</string>
