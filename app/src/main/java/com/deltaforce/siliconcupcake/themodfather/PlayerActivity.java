@@ -101,7 +101,8 @@ public class PlayerActivity extends AppCompatActivity {
     ConnectionsClient mConnectionsClient;
     Dialog loadingDialog, alertDialog;
     String myRole;
-    boolean mafiaVoted = false;
+    boolean silencerVote = false;
+    boolean lawyerVote = false;
     boolean isConnected = false;
 
     @Override
@@ -524,15 +525,25 @@ public class PlayerActivity extends AppCompatActivity {
                 break;
 
             case "Silencer":
-                if (mafiaVoted) {
+                if (silencerVote) {
                     instruction = "Who do you want to silence?";
                     alive.remove(getEndpointWithName(playerName));
-                    mafiaVoted = false;
+                    silencerVote = false;
                 } else {
                     instruction = "Who do you want to kill?";
-                    mafiaVoted = true;
+                    silencerVote = true;
                 }
                 break;
+
+            case "Lawyer":
+                if (lawyerVote) {
+                    instruction = "Who do you want to invert?";
+                    lawyerVote = false;
+                } else {
+                    instruction = "Who do you want to kill?";
+                    lawyerVote = true;
+
+                }
 
             case "Vigilante":
                 instruction = "Who do you want to kill?";

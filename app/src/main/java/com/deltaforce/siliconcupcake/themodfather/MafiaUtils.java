@@ -20,11 +20,12 @@ public class MafiaUtils {
 
     public static final String SERVICE_ID = "com.deltaforce.siliconcupcake.themodfather";
 
-    public static final ArrayList<String> CHARACTER_TYPES = new ArrayList<>(Arrays.asList("Slut", "Doctor", "Silencer", "Vigilante", "Sandman", "Cop", "Bomber", "President", "Hunter"));
+    public static final ArrayList<String> CHARACTER_TYPES = new ArrayList<>(Arrays.asList("Slut", "Doctor", "Silencer", "Lawyer", "Vigilante", "Sandman", "Cop", "Bomber", "President", "Hunter"));
     public static final ArrayList<String> CHARACTER_HINTS = new ArrayList<>(Arrays.asList(
             "A villager who can cancel the power of a player each night. The Slut cannot sleep with the same player twice in a row.",
             "A villager who can protect a player from being killed each night.",
             "A Mafioso who chooses a player each night and mutes the player during the day.",
+            "A Mafioso who can invert the cop's result provided he picked the same person as the cop. The Slut overrules his power when sleeping with the Cop.",
             "A villager who can kill a player each night.",
             "A villager who can disable everyone's power for just one night at any point in the game.",
             "A villager who can learn the identity of a player each night.",
