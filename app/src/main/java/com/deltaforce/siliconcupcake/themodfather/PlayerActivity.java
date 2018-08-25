@@ -311,7 +311,7 @@ public class PlayerActivity extends AppCompatActivity {
                 case MafiaUtils.RESPONSE_TYPE_DEATH:
                     alive = (ArrayList<Endpoint>) response.getData();
                     ((TextView) getSupportActionBar().getCustomView().findViewById(R.id.action_bar_title)).setText("Day");
-                    if (alive.get(0).getName().equals(playerName)) {
+                    if (alive.get(0).getName().equals(playerName) || alive.get(1).getName().equals(playerName)) {
                         showAlertDialog("You were killed", "Sorry", new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
@@ -321,7 +321,18 @@ public class PlayerActivity extends AppCompatActivity {
                         });
                     } else {
                         deathText.setVisibility(View.VISIBLE);
-                        deathText.setText(MafiaUtils.WAKE_UP_MORNING + alive.get(0).getName());
+                        if (alive.get(0).getName().equals("nobody")) {
+                            if (alive.get(1).getName().equals("nobody"))
+                                deathText.setText(MafiaUtils.WAKE_UP_MORNING + alive.get(0).getName());
+                            else
+                                deathText.setText(MafiaUtils.WAKE_UP_MORNING + alive.get(1).getName());
+                        } else {
+                            if (alive.get(1).getName().equals("nobody"))
+                                deathText.setText(MafiaUtils.WAKE_UP_MORNING + alive.get(0).getName());
+                            else
+                                deathText.setText(MafiaUtils.WAKE_UP_MORNING + alive.get(0).getName() + " and " + alive.get(1).getName());
+                        }
+                        alive.remove(0);
                         alive.remove(0);
                         skipButton.setEnabled(true);
                         animateViews(sleepLayout, voteLayout);
@@ -435,9 +446,9 @@ public class PlayerActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 if (voteAdapter.getSelections().size() > 1)
-                    Snackbar.make(parent, "Pick only one option.", Snackbar.LENGTH_LONG).show();
+                    Snackbar.make(parent, "Pick only one player.", Snackbar.LENGTH_LONG).show();
                 else if (voteAdapter.getSelections().size() == 0)
-                    Snackbar.make(parent, "Pick someone.", Snackbar.LENGTH_LONG).show();
+                    Snackbar.make(parent, "Pick a player.", Snackbar.LENGTH_LONG).show();
                 else {
                     Request r = new Request(MafiaUtils.REQUEST_TYPE_VOTE, alive.get(voteAdapter.getSelections().get(0)).getName());
                     sendDataToMod(endpoints.get(0).getId(), r);
@@ -492,6 +503,12 @@ public class PlayerActivity extends AppCompatActivity {
             case "Hunter":
                 instruction = "Who do you want to kill?";
                 alive.remove(getEndpointWithName(playerName));
+                break;
+
+            case "Sandman":
+                instruction = "Would you like to disable everyone's power tonight?";
+                alive = new ArrayList<>();
+                alive.add(new Endpoint("yid", "Yes"));
                 break;
 
             case "Slut":

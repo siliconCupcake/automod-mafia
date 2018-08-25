@@ -77,6 +77,7 @@ public class ModActivity extends AppCompatActivity {
     boolean hunterVote = false;
     boolean mafiaVoted = false;
     boolean havePresident = false;
+    boolean sandmanValid = false;
 
     String gameName;
     ArrayList<String> gameRoles = new ArrayList<>();
@@ -237,7 +238,7 @@ public class ModActivity extends AppCompatActivity {
                         Endpoint cop = getEndpointWithId(s);
                         votee = getEndpointWithName(request.getData());
                         MafiaUtils.addToLogFile("Receive from: {" + cop.getName() + ", VOTE: " + votee.getName() + "}", gameName + ".txt");
-                        if (nightChoices.containsKey("Slut") && nightChoices.get("Slut").equals(getEndpointWithId(s))) {
+                        if ((nightChoices.containsKey("Slut") && nightChoices.get("Slut").equals(getEndpointWithId(s))) || nightChoices.containsKey("Silencer")) {
                             Response r = new Response(MafiaUtils.RESPONSE_TYPE_COP, false);
                             sendDataToPlayer(s, r);
                             MafiaUtils.addToLogFile("Send to: {" + cop.getName() + ", COP: Villager}", gameName + ".txt");
@@ -250,6 +251,12 @@ public class ModActivity extends AppCompatActivity {
                             sendDataToPlayer(s, r);
                             MafiaUtils.addToLogFile("Send to: {" + cop.getName() + ", COP: Villager}", gameName + ".txt");
                         }
+                    } else if (getEndpointWithId(s).getRole().equals("Sandman")) {
+                        sandmanValid = false;
+                        nightChoices.clear();
+                        nightChoices.put("Sandman", null);
+                        gameRoles.remove("Sandman");
+                        sendDataToPlayer(s, new Response(MafiaUtils.RESPONSE_TYPE_ACK, "OK"));
                     } else {
                         votee = getEndpointWithName(request.getData());
                         MafiaUtils.addToLogFile("Receive from: {" + getEndpointWithId(s).getName() + ", VOTE: " + votee.getName() + "}", gameName + ".txt");
@@ -473,6 +480,7 @@ public class ModActivity extends AppCompatActivity {
     }
 
     private void calculateNightKill() {
+        //MAFIA KILL
         if (nightChoices.containsKey("Slut") && ((nightChoices.get("Slut").getRole().equals("Mafia") || nightChoices.get("Slut").getRole().equals("Godfather")) || nightChoices.get("Slut").getRole().equals("Silencer"))) {
             players.add(0, new Endpoint("DEATH", "nobody"));
         } else if (nightChoices.containsKey("Mafia") && nightChoices.containsKey("Doctor") && nightChoices.get("Mafia").equals(nightChoices.get("Doctor"))) {
@@ -486,6 +494,14 @@ public class ModActivity extends AppCompatActivity {
             Collections.swap(players, 0, killed);
         } else
             players.add(0, new Endpoint("DEATH", "nobody"));
+
+        //VIGILANTE KILL
+        if ((nightChoices.containsKey("Slut") && nightChoices.get("Slut").getRole().equals("Vigilante")) || !nightChoices.containsKey("Vigilante"))
+            players.add(1, new Endpoint("DEATH", "nobody"));
+        else {
+            int killed = players.indexOf(nightChoices.get("Vigilante"));
+            Collections.swap(players, 1, killed);
+        }
     }
 
     private void calculateLynch() {
@@ -511,6 +527,10 @@ public class ModActivity extends AppCompatActivity {
             sendDataToPlayer(player.getId(), r);
             MafiaUtils.addToLogFile(String.format(logText, player.getName()), gameName + ".txt");
         }
+        if (players.get(0).getName().equals(r.getData())) {
+            gameRoles.remove(players.get(0).getRole());
+            players.remove(0);
+        }
     }
 
     private void wakeUpMorning() {
@@ -518,11 +538,14 @@ public class ModActivity extends AppCompatActivity {
         mafiaVoted = false;
         calculateNightKill();
         calculateSilence();
-        Endpoint toKill = players.get(0);
+        Endpoint mafiaKill = players.get(0);
+        Endpoint vigilanteKill = players.get(1);
+        players.remove(0);
         players.remove(0);
         int isOver = isGameOver();
         if (isOver == 3) {
-            players.add(0, toKill);
+            players.add(0, mafiaKill);
+            players.add(1, vigilanteKill);
             Response r = new Response(MafiaUtils.RESPONSE_TYPE_DEATH, players);
             for (Endpoint p : players) {
                 if (nightChoices.containsKey("Silencer") && !nightChoices.get("Silencer").getName().equals(players.get(0).getName())) {
@@ -533,8 +556,10 @@ public class ModActivity extends AppCompatActivity {
                 MafiaUtils.addToLogFile("Send to: {" + p.getName() + ", DEATH: " + r.getData() + "}", gameName + ".txt");
             }
             players.remove(0);
+            players.remove(0);
         } else {
-            players.add(0, toKill);
+            players.add(0, mafiaKill);
+            players.add(1, vigilanteKill);
             Response r = new Response(MafiaUtils.RESPONSE_TYPE_OVER, MafiaUtils.WINNER[isOver]);
             for (Endpoint p : players) {
                 sendDataToPlayer(p.getId(), r);
@@ -560,10 +585,9 @@ public class ModActivity extends AppCompatActivity {
             roles.add(MafiaUtils.CHARACTER_TYPES.get(selections.get(i)));
         }
         gameRoles.addAll(roles);
-        if (gameRoles.contains("President")) {
-            havePresident = true;
-            gameRoles.remove("President");
-        }
+        sandmanValid = gameRoles.contains("Sandman");
+        havePresident = gameRoles.contains("President");
+        gameRoles.remove("President");
         gameRoles.remove("Hunter");
         roles.add("Godfather");
         if (roles.contains("Silencer")) {

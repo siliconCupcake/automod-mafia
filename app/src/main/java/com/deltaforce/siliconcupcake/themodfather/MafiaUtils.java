@@ -20,13 +20,17 @@ public class MafiaUtils {
 
     public static final String SERVICE_ID = "com.deltaforce.siliconcupcake.themodfather";
 
-    public static final ArrayList<String> CHARACTER_TYPES = new ArrayList<>(Arrays.asList("Slut", "Doctor", "Cop", "Silencer", "President", "Hunter"));
-    public static final ArrayList<String> CHARACTER_HINTS = new ArrayList<>(Arrays.asList("A villager who can cancel the power of a player each. The Slut cannot sleep with the same player twice in a row.",
+    public static final ArrayList<String> CHARACTER_TYPES = new ArrayList<>(Arrays.asList("Slut", "Doctor", "Silencer", "Vigilante", "Sandman", "Cop", "Bomber", "President", "Hunter"));
+    public static final ArrayList<String> CHARACTER_HINTS = new ArrayList<>(Arrays.asList(
+            "A villager who can cancel the power of a player each night. The Slut cannot sleep with the same player twice in a row.",
             "A villager who can protect a player from being killed each night.",
-            "A villager who can learn the identity of a player each night.",
             "A Mafioso who chooses a player each night and mutes the player during the day.",
+            "A villager who can kill a player each night.",
+            "A villager who can disable everyone's power for just one night at any point in the game.",
+            "A villager who can learn the identity of a player each night.",
+            "A villager who, when killed by the Mafia at night, doesn't die and kills a random Mafioso in return.",
             "A villager whose death results in the Mafia winning. The identity of the President is known to all vilagers but not to the Mafia.",
-            "A villager who can choose to kill another player when lynched"));
+            "A villager who can choose to kill another player when lynched."));
     public static final String[] WINNER = {"Mafia", "Villagers", "President"};
 
     public static final String WAKE_UP_MORNING = "Village wakes up to the death of ";
